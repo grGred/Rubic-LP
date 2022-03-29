@@ -38,7 +38,6 @@ contract Staking is SetParams {
 
     // Mapping that stores all token ids of an owner (owner => tokenIds[])
     mapping(address => EnumerableSet.UintSet) internal ownerToTokens;
-    mapping(uint256 => address) public tokenToOwner;
     // tokenId => amount total collected
     mapping(uint256 => uint256) public collectedRewardsForToken;
 
@@ -46,6 +45,7 @@ contract Staking is SetParams {
     uint256 public rewardGrowth = 1;
     // Total amount of USDC added as Rewards for APR
     uint256 internal totalRewardsAddedToday;
+    uint256 public requestedAmount;
 
     /// List of events
     event Burn(address from, address to, uint256 tokenId);
@@ -170,10 +170,7 @@ contract Staking is SetParams {
         maxStakeAmount(msg.sender, _amountUSDC, maxUSDCAmountWhitelist)
         onlyWhitelisted
     {
-        require(
-            block.timestamp >= startTime,
-            "Whitelist period hasnt started"
-        );
+        require(block.timestamp >= startTime, "Whitelist period hasnt started");
         require(
             block.timestamp <= startTime + 1 days,
             "Whitelist staking period ended"
@@ -185,10 +182,7 @@ contract Staking is SetParams {
         );
         require(_amountUSDC >= minUSDCAmount, "Less than minimum stake amount");
         /// Transfer USDC from user to the cross chain, BRBC to this contract, mints LP
-        _mint(
-            _amountUSDC,
-            true
-        );
+        _mint(_amountUSDC, true);
     }
 
     /// @dev Main function, which recieves deposit, calls _mint LP function, freeze funds
@@ -209,18 +203,12 @@ contract Staking is SetParams {
         );
         require(_amountUSDC >= minUSDCAmount, "Less than minimum stake amount");
         /// Transfer USDC from user to the cross chain, BRBC to this contract, mints LP
-        _mint(
-            _amountUSDC,
-            false
-        );
+        _mint(_amountUSDC, false);
     }
 
     /// @dev Internal function that mints LP
     /// @param _USDCAmount the amount of USDC in
-    function _mint(
-        uint256 _USDCAmount,
-        bool _whitelisted
-    ) internal {
+    function _mint(uint256 _USDCAmount, bool _whitelisted) internal {
         USDC.transferFrom(msg.sender, crossChain, _USDCAmount);
         BRBC.transferFrom(msg.sender, address(this), _USDCAmount);
         uint256 _tokenId = tokensLP.length;
@@ -239,7 +227,6 @@ contract Staking is SetParams {
         poolUSDC += _USDCAmount;
         poolBRBC += _USDCAmount;
 
-        tokenToOwner[_tokenId] = msg.sender;
         ownerToTokens[msg.sender].add(_tokenId);
         emit Stake(
             address(0),
@@ -251,16 +238,11 @@ contract Staking is SetParams {
         );
     }
 
-    function sweepTokens(IERC20 token) external onlyManager {
-        token.transfer(msg.sender, token.balanceOf(address(this)));
-    }
-
     /// @dev Internal function which burns LP tokens, clears data from mappings, arrays
     /// @param _tokenId token id that will be burnt
     function _burn(uint256 _tokenId) internal {
         poolUSDC -= tokensLP[_tokenId].USDCAmount;
         poolBRBC -= tokensLP[_tokenId].BRBCAmount;
-        tokenToOwner[_tokenId] = address(0);
         ownerToTokens[msg.sender].remove(_tokenId);
         emit Burn(msg.sender, address(0), _tokenId);
     }
@@ -276,7 +258,6 @@ contract Staking is SetParams {
     ) private isInStake(_tokenId) {
         ownerToTokens[_from].remove(_tokenId);
         ownerToTokens[_to].add(_tokenId);
-        tokenToOwner[_tokenId] = _to;
         emit Transfer(_from, _to, _tokenId);
     }
 
@@ -336,6 +317,7 @@ contract Staking is SetParams {
         }
         // ready for withdraw next day
         tokensLP[_tokenId].deadline = uint32(block.timestamp + 1 days);
+        requestedAmount += tokensLP[_tokenId].USDCAmount;
         emit RequestWithdraw(
             msg.sender,
             _tokenId,
@@ -361,24 +343,38 @@ contract Staking is SetParams {
     /// @dev User withdraw his freezed USDC and BRBC after stake
     /// @param _tokenId the token id
     function withdraw(uint256 _tokenId) external ownerOf(_tokenId) {
-        require(
-            tokensLP[_tokenId].isStaked == false,
-            "Request withdraw first"
-        );
+        require(tokensLP[_tokenId].isStaked == false, "Request withdraw first");
         require(
             tokensLP[_tokenId].USDCAmount < USDC.balanceOf(address(this)),
             "Funds hasnt arrived"
         );
-        withdrawAmount = tokensLP[_tokenId].USDCAmount;
+        uint256 _withdrawAmount = tokensLP[_tokenId].USDCAmount;
         _burn(_tokenId);
-        USDC.transfer(msg.sender, withdrawAmount);
-        BRBC.transfer(msg.sender, withdrawAmount);
+        requestedAmount -= _withdrawAmount;
+        USDC.transfer(msg.sender, _withdrawAmount);
+        BRBC.transfer(msg.sender, _withdrawAmount);
         emit Withdraw(
             address(this),
             msg.sender,
             _tokenId,
-            withdrawAmount,
-            withdrawAmount
+            _withdrawAmount,
+            _withdrawAmount
+        );
+    }
+
+    function sweepTokens(IERC20 token) external onlyManager {
+        token.transfer(msg.sender, token.balanceOf(address(this)));
+    }
+
+    function fundRequests() external onlyManager {
+        require(
+            requestedAmount > USDC.balanceOf(address(this)),
+            "enough funds"
+        );
+        USDC.transferFrom(
+            msg.sender,
+            address(this),
+            requestedAmount - USDC.balanceOf(address(this))
         );
     }
 
@@ -545,21 +541,10 @@ contract Staking is SetParams {
         if (poolUSDC == 0) {
             return 0;
         } else {
-            return (FullMath.mulDiv(totalRewardsAddedToday, 10**29, poolUSDC)
-                * 365
-                * 100);
+            return (FullMath.mulDiv(totalRewardsAddedToday, 10**29, poolUSDC) *
+                365 *
+                100);
         }
-    }
-
-    /// @dev shows the owner of the token
-    /// @param _tokenId the token id
-    /// returns owner address of the token
-    function viewTokenOwner(uint256 _tokenId)
-        public
-        view
-        returns (address tokenOwner)
-    {
-        return tokenToOwner[_tokenId];
     }
 
     function viewWhitelistInProgress()
@@ -576,7 +561,11 @@ contract Staking is SetParams {
     function stakingProgressParsed(address _tokenOwner)
         external
         view
-        returns (uint256 yourTotalUSDC, uint256 totalUSDCInPoolWhitelist, uint256 totalUSDCInPool)
+        returns (
+            uint256 yourTotalUSDC,
+            uint256 totalUSDCInPoolWhitelist,
+            uint256 totalUSDCInPool
+        )
     {
         uint256 _yourTotalUSDC = viewUSDCAmountOf(_tokenOwner);
         uint256 _totalUSDCInPoolWhitelist;
@@ -605,10 +594,15 @@ contract Staking is SetParams {
 
     /// @dev Shows the status of the user's token id for withdraw
     /// @param _tokenId the token id
-    function viewApprovedWithdrawToken(
-        uint256 _tokenId
-    ) public view returns (bool readyForWithdraw) {
-        if (tokensLP[_tokenId].isStaked == false && tokensLP[_tokenId].deadline >= block.timestamp) {
+    function viewApprovedWithdrawToken(uint256 _tokenId)
+        public
+        view
+        returns (bool readyForWithdraw)
+    {
+        if (
+            tokensLP[_tokenId].isStaked == false &&
+            tokensLP[_tokenId].deadline >= block.timestamp
+        ) {
             return true;
         }
         return false;
