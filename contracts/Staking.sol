@@ -79,7 +79,7 @@ contract Staking is SetParams {
         uint256 amountBRBC
     );
 
-    constructor() {
+    constructor(address usdcAddr, address brbcAddr) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MANAGER, msg.sender);
         // Set up penalty amount in %
@@ -93,9 +93,10 @@ contract Staking is SetParams {
 
         maxPoolUSDC = 800_000 * 10**decimals;
         maxPoolBRBC = 800_000 * 10**decimals;
-
-        USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
-        BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
+        USDC = IERC20(usdcAddr);
+        BRBC = IERC20(brbcAddr);
+        // USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
+        // BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
         penaltyReceiver = msg.sender;
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
@@ -128,22 +129,26 @@ contract Staking is SetParams {
         _;
     }
 
-    /// @dev This modifier prevents one person to own more than 100k USDC for this address
-    /// @param _tokenOwner the address of owner
+    /// @dev This modifier prevents one person to own more than max USDC for this address
     /// @param _amount the USDC amount to stake
     modifier maxStakeAmount(
-        address _tokenOwner,
         uint256 _amount,
         uint256 _maxUSDCAmount
     ) {
-        uint256[] memory ownerTokenList = viewTokensByOwner(_tokenOwner);
-        uint256 _usdcAmount = _amount;
-        for (uint256 i = 0; i < ownerTokenList.length; i++) {
-            _usdcAmount += tokensLP[ownerTokenList[i]].USDCAmount;
+        uint256[] memory ownerTokenList = viewTokensByOwner(msg.sender);
+        if (ownerTokenList.length == 0) {
             require(
-                _usdcAmount <= _maxUSDCAmount,
+                _amount <= _maxUSDCAmount,
                 "Max amount for stake exceeded"
             );
+        } else {
+            for (uint256 i = 0; i < ownerTokenList.length; i++) {
+                _amount += tokensLP[ownerTokenList[i]].USDCAmount;
+                require(
+                    _amount <= _maxUSDCAmount,
+                    "Max amount for stake exceeded"
+                );
+            }
         }
         _;
     }
@@ -163,11 +168,9 @@ contract Staking is SetParams {
         _;
     }
 
-    /// @dev if we have 70 addresses from whitelist, so the maxPoolUSDC might be lower for 70k, in the very end of
-    /// whitelisted staking manager calls whitelistStakingEnd and opens pool for addresses left
     function whitelistStake(uint256 _amountUSDC)
         external
-        maxStakeAmount(msg.sender, _amountUSDC, maxUSDCAmountWhitelist)
+        maxStakeAmount(_amountUSDC, maxUSDCAmountWhitelist)
         onlyWhitelisted
     {
         require(block.timestamp >= startTime, "Whitelist period hasnt started");
@@ -189,7 +192,7 @@ contract Staking is SetParams {
     /// @param _amountUSDC the amount in of USDC
     function stake(uint256 _amountUSDC)
         external
-        maxStakeAmount(msg.sender, _amountUSDC, maxUSDCAmount)
+        maxStakeAmount(_amountUSDC, maxUSDCAmount)
     {
         require(
             block.timestamp >= startTime + 1 days,
