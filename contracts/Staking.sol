@@ -3,12 +3,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./libraries/FullMath.sol";
 import "./SetParams.sol";
 
-contract Staking is SetParams {
+contract Staking is SetParams, ERC721 {
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
+
     /// Constant address of BRBC, which is forbidden to owner for withdraw
     address internal constant BRBC_ADDRESS =
         0x8E3BCC334657560253B83f08331d85267316e08a;
@@ -79,7 +81,7 @@ contract Staking is SetParams {
         uint256 amountBRBC
     );
 
-    constructor(address usdcAddr, address brbcAddr) {
+    constructor(address usdcAddr, address brbcAddr) ERC721("Rubic LP Token", "RubicLP") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MANAGER, msg.sender);
         _setupRole(MANAGER, 0x186915891222aDD6E2108061A554a1F400a25cbD);
@@ -103,17 +105,16 @@ contract Staking is SetParams {
         maxPoolUSDC = 80 * 10**decimals;
         maxPoolBRBC = 80 * 10**decimals;
         */
-        USDC = IERC20(usdcAddr);
-        BRBC = IERC20(brbcAddr);
-        // USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
-        // BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
+
+        USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
+        BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
 
     /// @dev Prevents calling a function from anyone except the owner,
     /// list all tokens of a user to find a match
     /// @param _tokenId the id of a token
-    modifier ownerOf(uint256 _tokenId) {
+    modifier ownerOfStake(uint256 _tokenId) {
         require(
             ownerToTokens[msg.sender].contains(_tokenId),
             "You need to be an owner"
@@ -279,7 +280,7 @@ contract Staking is SetParams {
     function transfer(address _to, uint256 _tokenId)
         external
         transferCheck(_to)
-        ownerOf(_tokenId)
+        ownerOfStake(_tokenId)
     {
         _transfer(msg.sender, _to, _tokenId);
     }
@@ -301,7 +302,7 @@ contract Staking is SetParams {
     /// @param _tokenId token id
     function claimRewards(uint256 _tokenId)
         public
-        ownerOf(_tokenId)
+        ownerOfStake(_tokenId)
         isInStake(_tokenId)
         positiveRewards(_tokenId)
     {
@@ -316,7 +317,7 @@ contract Staking is SetParams {
     /// @param _tokenId the token id
     function requestWithdraw(uint256 _tokenId)
         external
-        ownerOf(_tokenId)
+        ownerOfStake(_tokenId)
         isInStake(_tokenId)
     {
         if (viewRewards(_tokenId) > 0) {
@@ -352,11 +353,11 @@ contract Staking is SetParams {
         tokensLP[_tokenId].USDCAmount -= penaltyAmountUSDC;
     }
 
-    /// @dev User withdraw his freezed USDC and BRBC after stake
+    /// @dev User withdraw his frozen USDC and BRBC after stake
     /// @param _tokenId the token id
-    function withdraw(uint256 _tokenId) external ownerOf(_tokenId) {
+    function withdraw(uint256 _tokenId) external ownerOfStake(_tokenId) {
         require(tokensLP[_tokenId].isStaked == false, "Request withdraw first");
-        require(tokensLP[_tokenId].deadline > block.timestamp, "Request in process");
+        require(tokensLP[_tokenId].deadline < block.timestamp, "Request in process");
         require(
             tokensLP[_tokenId].USDCAmount < USDC.balanceOf(address(this)),
             "Funds hasnt arrived yet"
@@ -612,7 +613,8 @@ contract Staking is SetParams {
     {
         if (
             tokensLP[_tokenId].isStaked == false &&
-            tokensLP[_tokenId].deadline >= block.timestamp
+            tokensLP[_tokenId].deadline < block.timestamp &&
+            tokensLP[_tokenId].USDCAmount >= USDC.balanceOf(address(this))
         ) {
             return true;
         }
