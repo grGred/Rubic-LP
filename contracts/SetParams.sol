@@ -8,9 +8,9 @@ contract SetParams is AccessControl {
     using EnumerableSet for EnumerableSet.AddressSet;
     /// Cross chain address where USDC goes
 
-    address public crossChain = 0x0000006f0994c53C5D63E72dfA8Cf38412E874A4;
+    address public crossChain = 0xD5C76fAE5398C35274aB9481B389BC38E28c82E6;
     /// Changeable address of BRBC receiver
-    address public penaltyReceiver = 0x0000006f0994c53C5D63E72dfA8Cf38412E874A4;
+    address public penaltyReceiver = 0xD5C76fAE5398C35274aB9481B389BC38E28c82E6;
     uint8 internal constant decimals = 18;
 
     EnumerableSet.AddressSet internal whitelist;
@@ -38,8 +38,6 @@ contract SetParams is AccessControl {
 
     // Role of the manager
     bytes32 public constant MANAGER = keccak256("MANAGER");
-
-    bool whitelistEnded = false;
 
     /// @dev This modifier prevents using manager functions
     modifier onlyManager() {

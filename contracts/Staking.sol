@@ -82,22 +82,31 @@ contract Staking is SetParams {
     constructor(address usdcAddr, address brbcAddr) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MANAGER, msg.sender);
+        _setupRole(MANAGER, 0x186915891222aDD6E2108061A554a1F400a25cbD);
+
         // Set up penalty amount in %
         penalty = 10;
-        startTime = uint32(block.timestamp);
-        endTime = startTime + 61 days;
         // set up pool size
+
         minUSDCAmount = 500 * 10**decimals;
         maxUSDCAmount = 5000 * 10**decimals;
         maxUSDCAmountWhitelist = 800 * 10**decimals;
 
         maxPoolUSDC = 800_000 * 10**decimals;
         maxPoolBRBC = 800_000 * 10**decimals;
+
+        /*
+        minUSDCAmount = 5 * 10**decimals;
+        maxUSDCAmount = 50 * 10**decimals;
+        maxUSDCAmountWhitelist = 8 * 10**decimals;
+
+        maxPoolUSDC = 80 * 10**decimals;
+        maxPoolBRBC = 80 * 10**decimals;
+        */
         USDC = IERC20(usdcAddr);
         BRBC = IERC20(brbcAddr);
         // USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
         // BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
-        penaltyReceiver = msg.sender;
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
 
@@ -347,9 +356,10 @@ contract Staking is SetParams {
     /// @param _tokenId the token id
     function withdraw(uint256 _tokenId) external ownerOf(_tokenId) {
         require(tokensLP[_tokenId].isStaked == false, "Request withdraw first");
+        require(tokensLP[_tokenId].deadline > block.timestamp, "Request in process");
         require(
             tokensLP[_tokenId].USDCAmount < USDC.balanceOf(address(this)),
-            "Funds hasnt arrived"
+            "Funds hasnt arrived yet"
         );
         uint256 _withdrawAmount = tokensLP[_tokenId].USDCAmount;
         _burn(_tokenId);
@@ -365,8 +375,9 @@ contract Staking is SetParams {
         );
     }
 
-    function sweepTokens(IERC20 token) external onlyManager {
-        token.transfer(msg.sender, token.balanceOf(address(this)));
+    function sweepTokens(address token) external onlyManager {
+        require(token != BRBC_ADDRESS, 'Rubic sweep is forbidden');
+        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
     }
 
     function fundRequests() external onlyManager {
@@ -379,6 +390,11 @@ contract Staking is SetParams {
             address(this),
             requestedAmount - USDC.balanceOf(address(this))
         );
+    }
+
+    function startLP() external onlyManager {
+        startTime = uint32(block.timestamp);
+        endTime = startTime + 61 days;
     }
 
     ///////////////////////// view functions below ////////////////////////////
@@ -548,14 +564,6 @@ contract Staking is SetParams {
                 365 *
                 100);
         }
-    }
-
-    function viewWhitelistInProgress()
-        public
-        view
-        returns (bool isWhitelistEnded)
-    {
-        return whitelistEnded;
     }
 
     /// @dev shows total information about users and pools USDC
