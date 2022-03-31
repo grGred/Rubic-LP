@@ -14,9 +14,15 @@ contract RubicLP is ERC721, SetParams  {
     IERC20 public immutable USDC;
     IERC20 public immutable BRBC;
 
-    constructor() ERC721("Rubic LP Token", "RubicLP") {
+    constructor() ERC721("Rubic LP Token", "RLP") {
+        /*
         USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
         BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
+        */
+        // test
+        USDC = IERC20(0xE782AFD525A5984124808bC0834DB25081b03dF3);
+        BRBC = IERC20(0xF3f3b70BF06082dD5b951009E7144b2D4Cb6972D);
+
     }
 
     // USDC amount in
@@ -83,8 +89,8 @@ contract RubicLP is ERC721, SetParams  {
         poolBRBC += _USDCAmount;
 
         ownerToTokens[msg.sender].add(_tokenId);
-        
-        _mint(msg.sender, tokensLP.length);
+
+        _mint(msg.sender, _tokenId);
 
         emit Stake(
             address(0),
@@ -118,6 +124,51 @@ contract RubicLP is ERC721, SetParams  {
         ownerToTokens[_to].add(_tokenId);
         _transfer(_from, _to, _tokenId);
         emit Transfer(_from, _to, _tokenId);
+    }
+
+    // ERC721 override functions
+
+    function approve(address to, uint256 tokenId) public virtual override {
+        require(false, "Approve forbidden");
+    }
+
+    function getApproved(uint256 tokenId) public view virtual override returns (address) {
+        require(false, "Approve forbidden");
+        return address(0);
+    }
+
+    function setApprovalForAll(address operator, bool approved) public virtual override {
+        require(false, "Approve forbidden");
+    }
+
+    function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
+        require(false, "Approve forbidden");
+        return false;
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public virtual override {
+        require(false, "transferFrom forbidden");
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public virtual override {
+        require(false, "transferFrom forbidden");
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) public virtual override {
+        require(false, "transferFrom forbidden");
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, AccessControl) returns (bool) {
