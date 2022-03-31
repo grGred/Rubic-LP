@@ -128,45 +128,45 @@ contract RubicLP is ERC721, SetParams  {
 
     // ERC721 override functions
 
-    function approve(address to, uint256 tokenId) public virtual override {
+    function approve(address, uint256) public virtual override {
         require(false, "Approve forbidden");
     }
 
-    function getApproved(uint256 tokenId) public view virtual override returns (address) {
+    function getApproved(uint256) public view virtual override returns (address) {
         require(false, "Approve forbidden");
         return address(0);
     }
 
-    function setApprovalForAll(address operator, bool approved) public virtual override {
+    function setApprovalForAll(address, bool) public virtual override {
         require(false, "Approve forbidden");
     }
 
-    function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
+    function isApprovedForAll(address, address) public view virtual override returns (bool) {
         require(false, "Approve forbidden");
         return false;
     }
 
     function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
+        address,
+        address,
+        uint256
     ) public virtual override {
         require(false, "transferFrom forbidden");
     }
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
+        address,
+        address,
+        uint256
     ) public virtual override {
         require(false, "transferFrom forbidden");
     }
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory _data
+        address,
+        address,
+        uint256,
+        bytes memory
     ) public virtual override {
         require(false, "transferFrom forbidden");
     }

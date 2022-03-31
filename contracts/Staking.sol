@@ -227,7 +227,7 @@ contract Staking is RubicLP {
             _penalizeAddress(_tokenId);
         }
         // ready for withdraw next day
-        tokensLP[_tokenId].deadline = uint32(block.timestamp + 1 days);
+        tokensLP[_tokenId].deadline = uint32(block.timestamp + 100);
         requestedAmount += tokensLP[_tokenId].USDCAmount;
         emit RequestWithdraw(
             msg.sender,
@@ -257,7 +257,7 @@ contract Staking is RubicLP {
         require(tokensLP[_tokenId].isStaked == false, "Request withdraw first");
         require(tokensLP[_tokenId].deadline < block.timestamp, "Request in process");
         require(
-            tokensLP[_tokenId].USDCAmount < USDC.balanceOf(address(this)),
+            tokensLP[_tokenId].USDCAmount <= USDC.balanceOf(address(this)),
             "Funds hasnt arrived yet"
         );
         uint256 _withdrawAmount = tokensLP[_tokenId].USDCAmount;
@@ -346,7 +346,8 @@ contract Staking is RubicLP {
         if (tokensLP[_tokenId].deadline > uint32(block.timestamp + 1 days)) {
             return
                 uint32(
-                    tokensLP[_tokenId].deadline - (block.timestamp + 1 days)
+                    //tokensLP[_tokenId].deadline - (block.timestamp + 1 days)
+                    tokensLP[_tokenId].deadline - block.timestamp
                 );
         } else {
             return 0;
