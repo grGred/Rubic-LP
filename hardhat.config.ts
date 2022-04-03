@@ -1,61 +1,98 @@
 import '@typechain/hardhat';
+import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-waffle';
-import "@nomiclabs/hardhat-web3";
-import "@nomiclabs/hardhat-ethers";
-import '@openzeppelin/hardhat-upgrades';
-import "@nomiclabs/hardhat-etherscan";
+import '@nomiclabs/hardhat-etherscan';
+import 'hardhat-contract-sizer';
 
-// npx hardhat run --network bscMain scripts/deploy.js
+import { SolcUserConfig } from 'hardhat/types'
 
-module.exports = {
-  networks: {
-    localhost: {
-      url: "http://127.0.0.1:8545"
-    },
-    hardhat: {
-    },
-    bscTest: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-      chainId: 97,
-      gasPrice: 10000000000,
-      accounts: ['']
-    },
-    ropsten: {
-      url: "https://ropsten.infura.io/v3/",
-      chainId: 3,
-      gasPrice: 10000000000,
-      accounts: ['']
-    },
-    bscMain: {
-      url: "https://bsc-dataseed.binance.org/",
-      chainId: 56,
-      gasPrice: 5000000000,
-      accounts: ['']
-    }
-  },
-  solidity: {
-  version: "0.8.9",
+const path = require("path");
+const envConfig = require('dotenv').config({path: path.resolve(__dirname, '.env')});
+const {
+    ETHERSCAN_API_KEY,
+    BSCSCAN_API_KEY,
+    POLYGONSCAN_API_KEY,
+    MNEMONIC,
+    INFURA_ID_PROJECT,
+    POLYGON_INFURA_KEY,
+    BSC_RPC_KEY
+} = envConfig.parsed || {};
+
+
+const DEFAULT_COMPILER_SETTINGS: SolcUserConfig = {
+  version: '0.8.9',
   settings: {
     optimizer: {
       enabled: true,
-      runs: 999,
+      runs: 1_000,
+    },
+    metadata: {
+      bytecodeHash: 'none',
+    },
+  },
+}
+
+module.exports = {
+  networks: {
+    hardhat: {
+      chainId: 137,
+      forking: {
+        url: `https://polygon-mainnet.infura.io/v3/${POLYGON_INFURA_KEY}`,
+        blockNumber: 26536793 // hardcode block number to increase performance of the local cache
+      }
+    },
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${INFURA_ID_PROJECT}`,
+    },
+    ropsten: {
+      url: `https://ropsten.infura.io/v3/${INFURA_ID_PROJECT}`,
+      chainId: 3,
+      accounts: [`0x${MNEMONIC || '1000000000000000000000000000000000000000000000000000000000000000'}`],
+    },
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${INFURA_ID_PROJECT}`,
+    },
+    goerli: {
+      url: `https://goerli.infura.io/v3/${INFURA_ID_PROJECT}`,
+    },
+    kovan: {
+      url: `https://kovan.infura.io/v3/${INFURA_ID_PROJECT}`,
+      chainId: 42,
+      accounts: [`0x${MNEMONIC || '1000000000000000000000000000000000000000000000000000000000000000'}`],
+      gasPrice: 8000000000
+    },
+    bscTestnet: {
+      url: `https://data-seed-prebsc-2-s3.binance.org:8545`,
+      chainId: 97,
+      accounts: [`0x${MNEMONIC || '1000000000000000000000000000000000000000000000000000000000000000'}`]
+    },
+    bsc: {
+      url: `https://speedy-nodes-nyc.moralis.io/${BSC_RPC_KEY}/bsc/mainnet`,
+      chainId: 56,
+      accounts: [`0x${MNEMONIC || '1000000000000000000000000000000000000000000000000000000000000000'}`]
+    },
+    maticTestnet: {
+      url: `https://rpc-mumbai.maticvigil.com`,
+      chainId: 80001,
+      accounts: [`0x${MNEMONIC || '1000000000000000000000000000000000000000000000000000000000000000'}`],
+    },
+    maticMainnet: {
+      url: `https://rpc-mainnet.matic.quiknode.pro`,
+      chainId: 137,
+      accounts: [`0x${MNEMONIC || '1000000000000000000000000000000000000000000000000000000000000000'}`],
     }
-   }
-  },
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts"
-  },
-  mocha: {
-    timeout: 20000
   },
   etherscan: {
-    apiKey: '',
-    /*{
-      ropsten: "",
-      testnet: "",
-    }*/
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: `${BSCSCAN_API_KEY}`,
   },
-};
+  solidity: {
+    compilers: [DEFAULT_COMPILER_SETTINGS],
+  },
+  contractSizer: {
+    alphaSort: false,
+    disambiguatePaths: true,
+    runOnCompile: false,
+  },
+}

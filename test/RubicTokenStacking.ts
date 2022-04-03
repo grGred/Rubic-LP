@@ -3,6 +3,7 @@ import chai from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import Web3 from 'web3';
 import chaiAsPromised from 'chai-as-promised';
+import {address} from "hardhat/internal/core/config/config-validation";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
@@ -150,18 +151,20 @@ describe('RubicTokenStaking', function () {
          );
       });
 
-      it("Create stake", async function () {
+      it.only("Create stake", async function () {
          await this.Staking.startLP();
          await network.provider.send('evm_increaseTime', [
                 Number(86400)
          ]);
          await network.provider.send('evm_mine');
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('3000', 'ether'));
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('1000', 'ether'));
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('500', 'ether'));
+         // await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('550', 'ether'));
+         await this.Staking.viewTokensByOwner(this.Carol.address);
+         await this.Staking
 
-         let firstToken = await this.Staking.tokensLP(1);
 
-         await expect(firstToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('3000', 'ether').toString());
-         await expect(firstToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('3000', 'ether').toString());
 
          await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('500', 'ether'));
 
@@ -172,12 +175,12 @@ describe('RubicTokenStaking', function () {
 
          let balanceUSDC = await this.USDC.balanceOf(this.Alice.address);
          expect(balanceUSDC.toString()).to.be.eq(
-             Web3.utils.toWei('90000', 'ether').toString()
+             Web3.utils.toWei('99500', 'ether').toString()
          );
 
          let balanceBRBC = await this.BRBC.balanceOf(this.Alice.address);
          expect(balanceBRBC.toString()).to.be.eq(
-             Web3.utils.toWei('91500', 'ether').toString()
+             Web3.utils.toWei('99500', 'ether').toString()
          );
 
          await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('25000', 'ether'));
@@ -185,7 +188,7 @@ describe('RubicTokenStaking', function () {
          let thirdToken = await this.Staking.tokensLP(3);
 
          expect(thirdToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('25000', 'ether').toString());
-         expect(thirdToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('17500', 'ether').toString());
+         expect(thirdToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('25000', 'ether').toString());
 
       });
 
