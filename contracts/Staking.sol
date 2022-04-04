@@ -502,6 +502,18 @@ contract Staking is RubicLP {
         return (_amountToCollectTotal, _amountCollectedTotal, _apr);
     }
 
+
+    function viewWhitelistInProgress()
+        public
+        view
+        returns (bool isInProgress)
+    {
+        if (startTime + 10 minutes > block.timestamp) {
+            return true;
+        }
+        return false;
+    }
+
     /// @dev Shows the status of the user's token id for withdraw
     /// @param _tokenId the token id
     function viewApprovedWithdrawToken(uint256 _tokenId)
