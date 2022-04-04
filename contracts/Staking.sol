@@ -51,22 +51,21 @@ contract Staking is RubicLP {
         // Set up penalty amount in %
         penalty = 10;
         // set up pool size
-
+        /*
         minUSDCAmount = 500 * 10**decimals;
         maxUSDCAmount = 5000 * 10**decimals;
         maxUSDCAmountWhitelist = 800 * 10**decimals;
 
         maxPoolUSDC = 800_000 * 10**decimals;
         maxPoolBRBC = 800_000 * 10**decimals;
+        */
 
-        /*
         minUSDCAmount = 5 * 10**decimals;
         maxUSDCAmount = 50 * 10**decimals;
         maxUSDCAmountWhitelist = 8 * 10**decimals;
 
         maxPoolUSDC = 80 * 10**decimals;
         maxPoolBRBC = 80 * 10**decimals;
-        */
 
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
@@ -138,7 +137,7 @@ contract Staking is RubicLP {
     {
         require(block.timestamp >= startTime, "Whitelist period hasnt started");
         require(
-            block.timestamp <= startTime + 1 days,
+            block.timestamp <= startTime + 10 minutes,
             "Whitelist staking period ended"
         );
         require(
@@ -158,7 +157,7 @@ contract Staking is RubicLP {
         maxStakeAmount(_amountUSDC, maxUSDCAmount)
     {
         require(
-            block.timestamp >= startTime + 1 days,
+            block.timestamp >= startTime + 10 minutes,
             "Staking period hasn't started"
         );
         require(block.timestamp <= endTime, "Staking period has ended");
@@ -223,11 +222,11 @@ contract Staking is RubicLP {
         }
         tokensLP[_tokenId].isStaked = false;
 
-        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + 1 days)) {
+        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + 5 minutes)) {
             _penalizeAddress(_tokenId);
         }
         // ready for withdraw next day
-        tokensLP[_tokenId].deadline = uint32(block.timestamp + 100);
+        tokensLP[_tokenId].deadline = uint32(block.timestamp + 5 minutes);
         requestedAmount += tokensLP[_tokenId].USDCAmount;
         emit RequestWithdraw(
             msg.sender,
@@ -293,7 +292,7 @@ contract Staking is RubicLP {
 
     function startLP() external onlyManager {
         startTime = uint32(block.timestamp);
-        endTime = startTime + 61 days;
+        endTime = startTime + 25 minutes;
     }
 
     ///////////////////////// view functions below ////////////////////////////
@@ -343,10 +342,10 @@ contract Staking is RubicLP {
     /// @dev Shows the amount of time left before unlock, returns 0 in case token is already unlocked
     /// @param _tokenId the token id
     function timeBeforeUnlock(uint256 _tokenId) public view returns (uint32) {
-        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + 1 days)) {
+        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + 5 minutes)) {
             return
                 uint32(
-                    //tokensLP[_tokenId].deadline - (block.timestamp + 1 days)
+                    //tokensLP[_tokenId].deadline - (block.timestamp + 5 minutes)
                     tokensLP[_tokenId].deadline - block.timestamp
                 );
         } else {

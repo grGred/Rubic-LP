@@ -1,7 +1,6 @@
 {
   "name": "staking",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -25,9 +24,11 @@
     "@types/mocha": "^9.1.0",
     "chai": "^4.3.6",
     "chai-as-promised": "^7.1.1",
+    "dotenv": "^16.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.4",
-    "hardhat": "^2.8.4",
+    "hardhat": "^2.9.2",
+    "hardhat-contract-sizer": "^2.5.1",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "ts-node": "^10.5.0",
@@ -37,5 +38,14 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cryptorubic/LP-Staking-R1.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Cryptorubic/LP-Staking-R1/issues"
+  },
+  "homepage": "https://github.com/Cryptorubic/LP-Staking-R1#readme",
+  "description": ""
 }

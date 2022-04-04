@@ -15,14 +15,8 @@ contract RubicLP is ERC721, SetParams  {
     IERC20 public immutable BRBC;
 
     constructor() ERC721("Rubic LP Token", "RLP") {
-        /*
         USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
         BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
-        */
-        // test
-        USDC = IERC20(0xE782AFD525A5984124808bC0834DB25081b03dF3);
-        BRBC = IERC20(0xF3f3b70BF06082dD5b951009E7144b2D4Cb6972D);
-
     }
 
     // USDC amount in
