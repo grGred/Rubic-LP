@@ -46,7 +46,7 @@ describe('RubicTokenStaking', function () {
    });
 
    describe('Stake tests', () => {
-      it("Initial token", async function () {
+      it("Should create initial token", async function () {
          let initialToken = await this.Staking.tokensLP(0);
 
          expect(initialToken.tokenId.toString()).to.be.eq('0');
@@ -57,7 +57,7 @@ describe('RubicTokenStaking', function () {
          expect(initialToken.lastRewardGrowth.toString()).to.be.eq('0');
       });
 
-      it("startLP", async function () {
+      it("Should start LP", async function () {
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
          await network.provider.send('evm_mine');
 
@@ -80,7 +80,7 @@ describe('RubicTokenStaking', function () {
          await expect(firstToken.isWhitelisted.toString()).to.be.eq('true');
       });
 
-      it("Create whitelist stake", async function () {
+      it("Should create whitelist stakes", async function () {
          await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
          await network.provider.send('evm_mine');
@@ -151,7 +151,7 @@ describe('RubicTokenStaking', function () {
          );
       });
 
-      it.only("Create stake", async function () {
+      it.only("Should create stakes", async function () {
          await this.Staking.startLP();
          await network.provider.send('evm_increaseTime', [
                 Number(86400)
@@ -160,26 +160,26 @@ describe('RubicTokenStaking', function () {
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('3000', 'ether'));
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('1000', 'ether'));
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('500', 'ether'));
-         // await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('550', 'ether'));
-         await this.Staking.viewTokensByOwner(this.Carol.address);
-         await this.Staking
+         await network.provider.send('evm_mine');
+         await expect(this.Staking.connect(this.Carol).stake(Web3.utils.toWei('550', 'ether')).toString());
+         let tokensCarol = await this.Staking.viewTokensByOwner(this.Carol.address);
 
-
+         console.log(tokensCarol);
 
          await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('500', 'ether'));
 
          let secondToken = await this.Staking.tokensLP(2);
 
-         expect(secondToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
-         expect(secondToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
+         await expect(secondToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
+         await expect(secondToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
 
          let balanceUSDC = await this.USDC.balanceOf(this.Alice.address);
-         expect(balanceUSDC.toString()).to.be.eq(
+         await expect(balanceUSDC.toString()).to.be.eq(
              Web3.utils.toWei('99500', 'ether').toString()
          );
 
          let balanceBRBC = await this.BRBC.balanceOf(this.Alice.address);
-         expect(balanceBRBC.toString()).to.be.eq(
+         await expect(balanceBRBC.toString()).to.be.eq(
              Web3.utils.toWei('99500', 'ether').toString()
          );
 
@@ -192,7 +192,7 @@ describe('RubicTokenStaking', function () {
 
       });
 
-      it("Stake time", async function () {
+      it("Should doesn't allow stake after time", async function () {
          /*let blockNum0 = await ethers.provider.getBlockNumber();
          let block0 = await ethers.provider.getBlock(blockNum0);
          let timestamp0 = block0.timestamp;
@@ -237,7 +237,7 @@ describe('RubicTokenStaking', function () {
 
       });
 
-      it("Max pool size", async function () {
+      it("Should doesn't allow stake with max pool size", async function () {
          await this.Staking.setMaxPoolBRBC(Web3.utils.toWei('50000', 'ether'));
          await this.Staking.setMaxPoolUSDC(Web3.utils.toWei('50000', 'ether'));
 
@@ -255,7 +255,7 @@ describe('RubicTokenStaking', function () {
    });
 
    describe('Transfer', () => {
-      it("Transfer", async function () {
+      it("Should Transfer", async function () {
          await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
 
          await this.Staking.connect(this.Alice).transfer(this.Bob.address, 1);
@@ -299,7 +299,7 @@ describe('RubicTokenStaking', function () {
    });
 
    describe('Rewards ', () => {
-      it("Add rewards, view rewards", async function () {
+      it("Should add rewards, view rewards", async function () {
          await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
          await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('20000', 'ether'));
 
@@ -321,7 +321,7 @@ describe('RubicTokenStaking', function () {
 
       });
 
-      it("Claim Rewards", async function () {
+      it("Should claim Rewards", async function () {
 
          await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
          await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('20000', 'ether'));
