@@ -9,6 +9,10 @@ contract Staking is RubicLP {
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    uint32 immutable requestTime;
+    uint32 immutable whitelistTime;
+    uint32 immutable lpDuration;
+
     /// Constant address of BRBC, which is forbidden to owner for withdraw
     address internal constant BRBC_ADDRESS =
         0x8E3BCC334657560253B83f08331d85267316e08a;
@@ -43,7 +47,7 @@ contract Staking is RubicLP {
         uint256 amountBRBC
     );
 
-    constructor() RubicLP() {
+    constructor(address usdcAddr, address brbcAddr) RubicLP(usdcAddr, brbcAddr) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MANAGER, msg.sender);
         _setupRole(MANAGER, 0x186915891222aDD6E2108061A554a1F400a25cbD);
@@ -51,14 +55,23 @@ contract Staking is RubicLP {
         // Set up penalty amount in %
         penalty = 10;
         // set up pool size
-        /*
+
+        requestTime = 1 days;
+        whitelistTime = 1 days;
+        lpDuration = 61 days;
+
         minUSDCAmount = 500 * 10**decimals;
         maxUSDCAmount = 5000 * 10**decimals;
         maxUSDCAmountWhitelist = 800 * 10**decimals;
 
         maxPoolUSDC = 800_000 * 10**decimals;
         maxPoolBRBC = 800_000 * 10**decimals;
-        */
+
+        /* test
+
+        requestTime = 5 minutes;
+        whitelistTime = 10 minutes;
+        lpDuration = 25 minutes;
 
         minUSDCAmount = 5 * 10**decimals;
         maxUSDCAmount = 50 * 10**decimals;
@@ -66,7 +79,7 @@ contract Staking is RubicLP {
 
         maxPoolUSDC = 80 * 10**decimals;
         maxPoolBRBC = 80 * 10**decimals;
-
+        */
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
 
@@ -137,7 +150,7 @@ contract Staking is RubicLP {
     {
         require(block.timestamp >= startTime, "Whitelist period hasnt started");
         require(
-            block.timestamp <= startTime + 10 minutes,
+            block.timestamp < startTime + whitelistTime,
             "Whitelist staking period ended"
         );
         require(
@@ -157,7 +170,7 @@ contract Staking is RubicLP {
         maxStakeAmount(_amountUSDC, maxUSDCAmount)
     {
         require(
-            block.timestamp >= startTime + 10 minutes,
+            block.timestamp >= startTime + whitelistTime,
             "Staking period hasn't started"
         );
         require(block.timestamp <= endTime, "Staking period has ended");
@@ -222,11 +235,11 @@ contract Staking is RubicLP {
         }
         tokensLP[_tokenId].isStaked = false;
 
-        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + 5 minutes)) {
+        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + requestTime)) {
             _penalizeAddress(_tokenId);
         }
         // ready for withdraw next day
-        tokensLP[_tokenId].deadline = uint32(block.timestamp + 5 minutes);
+        tokensLP[_tokenId].deadline = uint32(block.timestamp + requestTime);
         requestedAmount += tokensLP[_tokenId].USDCAmount;
         emit RequestWithdraw(
             msg.sender,
@@ -292,7 +305,7 @@ contract Staking is RubicLP {
 
     function startLP() external onlyManager {
         startTime = uint32(block.timestamp);
-        endTime = startTime + 25 minutes;
+        endTime = startTime + lpDuration;
     }
 
     ///////////////////////// view functions below ////////////////////////////
@@ -342,10 +355,9 @@ contract Staking is RubicLP {
     /// @dev Shows the amount of time left before unlock, returns 0 in case token is already unlocked
     /// @param _tokenId the token id
     function timeBeforeUnlock(uint256 _tokenId) public view returns (uint32) {
-        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + 5 minutes)) {
+        if (tokensLP[_tokenId].deadline > uint32(block.timestamp + requestTime)) {
             return
                 uint32(
-                    //tokensLP[_tokenId].deadline - (block.timestamp + 5 minutes)
                     tokensLP[_tokenId].deadline - block.timestamp
                 );
         } else {
@@ -508,7 +520,7 @@ contract Staking is RubicLP {
         view
         returns (bool isInProgress)
     {
-        if (startTime + 10 minutes > block.timestamp) {
+        if (startTime + whitelistTime > block.timestamp) {
             return true;
         }
         return false;
