@@ -3,7 +3,7 @@ const hre = require("hardhat");
 async function main() {
   const RubicTokenStaker = await hre.ethers.getContractFactory("contracts/Staking.sol:Staking");
 
-  const RubicTokenStakerDeploy = await RubicTokenStaker.deploy();
+  const RubicTokenStakerDeploy = await RubicTokenStaker.deploy('0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', '0x8E3BCC334657560253B83f08331d85267316e08a');
   await RubicTokenStakerDeploy.deployed();
 
   console.log("RubicTokenStakerDeploy deployed to:", RubicTokenStakerDeploy.address);
@@ -13,6 +13,8 @@ async function main() {
 
   await hre.run("verify:verify", {
     address: RubicTokenStakerDeploy.address,
+    params:
+    ['0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', '0x8E3BCC334657560253B83f08331d85267316e08a']
   });
 }
 

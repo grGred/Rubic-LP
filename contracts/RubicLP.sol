@@ -2,27 +2,21 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./SetParams.sol";
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+import './SetParams.sol';
 
-contract RubicLP is ERC721, SetParams  {
+contract RubicLP is ERC721, SetParams {
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     IERC20 public immutable USDC;
     IERC20 public immutable BRBC;
 
-    constructor(address usdcTest,address brbcTest) ERC721("Rubic LP Token", "RLP") {
-        // Test
+    constructor(address usdcTest, address brbcTest) ERC721('Rubic LP Token', 'RLP') {
         USDC = IERC20(usdcTest);
         BRBC = IERC20(brbcTest);
-
-        /* Main
-        USDC = IERC20(0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d);
-        BRBC = IERC20(0x8E3BCC334657560253B83f08331d85267316e08a);
-        */
     }
 
     // USDC amount in
@@ -51,19 +45,12 @@ contract RubicLP is ERC721, SetParams  {
     // Mapping that stores all token ids of an owner (owner => tokenIds[])
     mapping(address => EnumerableSet.UintSet) internal ownerToTokens;
 
-    event Stake(
-        address from,
-        address to,
-        uint256 amountUsdc,
-        uint256 amountBrbc,
-        uint256 period,
-        uint256 tokenId
-    );
+    event Stake(address from, address to, uint256 amountUsdc, uint256 amountBrbc, uint256 period, uint256 tokenId);
 
     /// @dev Prevents using unstaked tokens
     /// @param _tokenId the id of a token
     modifier isInStake(uint256 _tokenId) {
-        require(tokensLP[_tokenId].isStaked, "Stake requested for withdraw");
+        require(tokensLP[_tokenId].isStaked, 'Stake requested for withdraw');
         _;
     }
 
@@ -92,14 +79,7 @@ contract RubicLP is ERC721, SetParams  {
 
         _mint(msg.sender, _tokenId);
 
-        emit Stake(
-            address(0),
-            msg.sender,
-            _USDCAmount,
-            _USDCAmount,
-            endTime,
-            _tokenId
-        );
+        emit Stake(address(0), msg.sender, _USDCAmount, _USDCAmount, endTime, _tokenId);
     }
 
     /// @dev Internal function which burns LP tokens, clears data from mappings, arrays
@@ -129,20 +109,20 @@ contract RubicLP is ERC721, SetParams  {
     // ERC721 override functions
 
     function approve(address, uint256) public virtual override {
-        require(false, "Approve forbidden");
+        require(false, 'Approve forbidden');
     }
 
     function getApproved(uint256) public view virtual override returns (address) {
-        require(false, "Approve forbidden");
+        require(false, 'Approve forbidden');
         return address(0);
     }
 
     function setApprovalForAll(address, bool) public virtual override {
-        require(false, "Approve forbidden");
+        require(false, 'Approve forbidden');
     }
 
     function isApprovedForAll(address, address) public view virtual override returns (bool) {
-        require(false, "Approve forbidden");
+        require(false, 'Approve forbidden');
         return false;
     }
 
@@ -151,7 +131,7 @@ contract RubicLP is ERC721, SetParams  {
         address,
         uint256
     ) public virtual override {
-        require(false, "transferFrom forbidden");
+        require(false, 'transferFrom forbidden');
     }
 
     function safeTransferFrom(
@@ -159,7 +139,7 @@ contract RubicLP is ERC721, SetParams  {
         address,
         uint256
     ) public virtual override {
-        require(false, "transferFrom forbidden");
+        require(false, 'transferFrom forbidden');
     }
 
     function safeTransferFrom(
@@ -168,7 +148,7 @@ contract RubicLP is ERC721, SetParams  {
         uint256,
         bytes memory
     ) public virtual override {
-        require(false, "transferFrom forbidden");
+        require(false, 'transferFrom forbidden');
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, AccessControl) returns (bool) {
