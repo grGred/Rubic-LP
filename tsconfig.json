@@ -4,8 +4,12 @@
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
-    "outDir": "dist"
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "typeRoots": ["./typechain", "./node_modules/@types", "./types"],
+    "types": ["@nomiclabs/hardhat-ethers", "@nomiclabs/hardhat-waffle"],
+    "noImplicitAny": false
   },
-  "include": ["./scripts", "./test"],
+  "include": ["./test"],
   "files": ["./hardhat.config.ts"]
 }

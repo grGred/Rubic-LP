@@ -38,29 +38,29 @@ contract Staking is RubicLP {
         penalty = 10;
         // set up pool size
 
-//        requestTime = 1 days;
-//        whitelistTime = 1 days;
-//        lpDuration = 61 days;
-//
-//        minUSDCAmount = 500 * 10**decimals;
-//        maxUSDCAmount = 5000 * 10**decimals;
-//        maxUSDCAmountWhitelist = 800 * 10**decimals;
-//
-//        maxPoolUSDC = 800_000 * 10**decimals;
-//        maxPoolBRBC = 800_000 * 10**decimals;
+        requestTime = 1 days;
+        whitelistTime = 1 days;
+        lpDuration = 61 days;
+
+        minUSDCAmount = 500 * 10**decimals;
+        maxUSDCAmount = 5000 * 10**decimals;
+        maxUSDCAmountWhitelist = 800 * 10**decimals;
+
+        maxPoolUSDC = 800_000 * 10**decimals;
+        maxPoolBRBC = 800_000 * 10**decimals;
 
         // test
 
-        requestTime = 5 minutes;
-        whitelistTime = 10 minutes;
-        lpDuration = 25 minutes;
-
-        minUSDCAmount = 5 * 10**decimals;
-        maxUSDCAmount = 50 * 10**decimals;
-        maxUSDCAmountWhitelist = 8 * 10**decimals;
-
-        maxPoolUSDC = 80 * 10**decimals;
-        maxPoolBRBC = 80 * 10**decimals;
+//        requestTime = 5 minutes;
+//        whitelistTime = 10 minutes;
+//        lpDuration = 25 minutes;
+//
+//        minUSDCAmount = 5 * 10**decimals;
+//        maxUSDCAmount = 50 * 10**decimals;
+//        maxUSDCAmountWhitelist = 8 * 10**decimals;
+//
+//        maxPoolUSDC = 80 * 10**decimals;
+//        maxPoolBRBC = 80 * 10**decimals;
 
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }

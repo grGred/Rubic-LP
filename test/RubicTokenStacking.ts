@@ -2,10 +2,7 @@ import { ethers, network } from 'hardhat';
 import chai from 'chai';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import Web3 from 'web3';
-import chaiAsPromised from 'chai-as-promised';
-import {address} from "hardhat/internal/core/config/config-validation";
-chai.use(chaiAsPromised);
-const expect = chai.expect;
+import { expect } from 'chai';
 
 describe('RubicTokenStaking', function () {
 
@@ -65,7 +62,7 @@ describe('RubicTokenStaking', function () {
             'Whitelist staking period ended'
          );
          await expect(this.Staking.connect(this.Alice).stake(Web3.utils.toWei('702', 'ether'))).to.be.revertedWith(
-            'Staking period ended'
+            'Staking period has ended'
          );
          await expect(this.Staking.connect(this.Alice).startLP()).to.be.revertedWith(
             'Caller is not a manager'
@@ -85,7 +82,9 @@ describe('RubicTokenStaking', function () {
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
          await network.provider.send('evm_mine');
 
-         await expect(this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('801', 'ether'))).to.be.revertedWith(
+         await expect(this.Staking.connect(this.Carol).whitelistStake(
+             Web3.utils.toWei('801', 'ether')
+             )).to.be.revertedWith(
             'Max amount for stake exceeded'
          );
 
@@ -151,7 +150,7 @@ describe('RubicTokenStaking', function () {
          );
       });
 
-      it.only("Should create stakes", async function () {
+      it("Should create stakes", async function () {
          await this.Staking.startLP();
          await network.provider.send('evm_increaseTime', [
                 Number(86400)
@@ -161,96 +160,132 @@ describe('RubicTokenStaking', function () {
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('1000', 'ether'));
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('500', 'ether'));
          await network.provider.send('evm_mine');
-         await expect(this.Staking.connect(this.Carol).stake(Web3.utils.toWei('550', 'ether')).toString());
+
+         expect(this.Staking.connect(this.Carol).stake(
+             Web3.utils.toWei('550', 'ether'))).to.be.revertedWith(
+            'Max amount for stake exceeded'
+         );
+
          let tokensCarol = await this.Staking.viewTokensByOwner(this.Carol.address);
 
-         console.log(tokensCarol);
+         await expect(tokensCarol.toString()).to.be.eq('1,2,3');
 
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('500', 'ether'));
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('543', 'ether'));
 
-         let secondToken = await this.Staking.tokensLP(2);
+         let AliceToken = await this.Staking.tokensLP(4);
 
-         await expect(secondToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
-         await expect(secondToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
+         await expect(AliceToken.isStaked.toString()).to.be.eq('true');
+         await expect(AliceToken.isWhitelisted.toString()).to.be.eq('false');
 
-         let balanceUSDC = await this.USDC.balanceOf(this.Alice.address);
-         await expect(balanceUSDC.toString()).to.be.eq(
-             Web3.utils.toWei('99500', 'ether').toString()
+         await expect(
+             this.Staking.connect(this.Bob).stake(Web3.utils.toWei('100', 'ether'))
+         ).to.be.revertedWith(
+            'Less than minimum stake amount'
          );
-
-         let balanceBRBC = await this.BRBC.balanceOf(this.Alice.address);
-         await expect(balanceBRBC.toString()).to.be.eq(
-             Web3.utils.toWei('99500', 'ether').toString()
-         );
-
-         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('25000', 'ether'));
-
-         let thirdToken = await this.Staking.tokensLP(3);
-
-         expect(thirdToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('25000', 'ether').toString());
-         expect(thirdToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('25000', 'ether').toString());
-
-      });
-
-      it("Should doesn't allow stake after time", async function () {
-         /*let blockNum0 = await ethers.provider.getBlockNumber();
-         let block0 = await ethers.provider.getBlock(blockNum0);
-         let timestamp0 = block0.timestamp;
-         await network.provider.send('evm_setNextBlockTimestamp', [timestamp0 + 86400]);
-         await network.provider.send('evm_mine');*/
-
 
          let blockNum = await ethers.provider.getBlockNumber();
          let block = await ethers.provider.getBlock(blockNum);
          let timestamp = block.timestamp;
+         await network.provider.send("evm_increaseTime", [timestamp + 5270400]);
+         await network.provider.send('evm_mine');
 
-         await this.Staking.setTime(timestamp + 1000, timestamp + 2592000 + 20000);
-
-         /*
-         expect(await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether')).to.be.revertedWith(
-             "Staking period hasn't started"
+         await expect(
+             this.Staking.connect(this.Bob).stake(Web3.utils.toWei('100', 'ether'))
+         ).to.be.revertedWith(
+            'Staking period has ended'
          );
-         */
-
-         await network.provider.send('evm_setNextBlockTimestamp', [timestamp + 10000]);
-
-         expect(this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'))).to.be.revertedWith(
-            'Invalid period'
-         );
-
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
-
-         let firstToken = await this.Staking.tokensLP(1);
-
-         let blockNum1 = await ethers.provider.getBlockNumber();
-         let block1 = await ethers.provider.getBlock(blockNum1);
-         let timestamp1 = block1.timestamp;
-
-         expect(firstToken.deadline).to.be.eq(timestamp1 + 2592000);
-
-         await network.provider.send('evm_setNextBlockTimestamp', [timestamp1 + 15552000]);
-
-
-         expect(this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'))).to.be.revertedWith(
-             'Staking period has ended'
-         );
-
       });
 
-      it("Should doesn't allow stake with max pool size", async function () {
-         await this.Staking.setMaxPoolBRBC(Web3.utils.toWei('50000', 'ether'));
-         await this.Staking.setMaxPoolUSDC(Web3.utils.toWei('50000', 'ether'));
+      it("For whitelist", async function () {
 
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('40000', 'ether'));
-         await expect(this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10001', 'ether'))).to.be.revertedWith(
-              "Max pool size exceeded"
-         );
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
 
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
+         await network.provider.send('evm_mine');
+         console.log(await this.Staking.startTime());
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+         console.log(timestamp);
+         // TODO
 
-         expect(this.Staking.connect(this.Bob).stake(Web3.utils.toWei('50000', 'ether'))).to.be.revertedWith(
-             'Max pool size exceeded'
-         );
+         await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('800', 'ether'));
+
+         await network.provider.send('evm_mine');
+         let poolUSDC1 = await this.Staking.poolUSDC();
+         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('800', 'ether'));
+
+         await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC2 = await this.Staking.poolUSDC();
+         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('1600', 'ether'));
+
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('628', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC3 = await this.Staking.poolUSDC();
+         await expect(poolUSDC3.toString()).to.be.eq(Web3.utils.toWei('2228', 'ether'));
+
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
+         await network.provider.send('evm_mine');
+      });
+
+      it("For main stake", async function () {
+         await this.Staking.startLP();
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('800', 'ether'));
+
+         await network.provider.send('evm_mine');
+         let poolUSDC1 = await this.Staking.poolUSDC();
+         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('800', 'ether'));
+
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('800', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC2 = await this.Staking.poolUSDC();
+         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('1600', 'ether'));
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('628', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC3 = await this.Staking.poolUSDC();
+         await expect(poolUSDC3.toString()).to.be.eq(Web3.utils.toWei('2228', 'ether'));
+      });
+
+      it("Whitelist + main stake", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
+
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('800', 'ether'));
+         await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'));
+
+         await network.provider.send('evm_mine');
+
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('1400', 'ether'));
+
+         await network.provider.send('evm_mine');
+         let poolUSDC1 = await this.Staking.poolUSDC();
+         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('3000', 'ether'));
+
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('2000', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC2 = await this.Staking.poolUSDC();
+         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('5000', 'ether'));
       });
    });
 
