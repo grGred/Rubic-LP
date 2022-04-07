@@ -4,6 +4,13 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import Web3 from 'web3';
 import { expect } from 'chai';
 
+const {
+  BN,           // Big Number support
+  constants,    // Common constants, like the zero address and largest integers
+  expectEvent,  // Assertions for emitted events
+  expectRevert, // Assertions for transactions that should fail
+} = require('@openzeppelin/test-helpers');
+
 describe('RubicTokenStaking', function () {
 
    before(async function () {
@@ -77,9 +84,97 @@ describe('RubicTokenStaking', function () {
          await expect(firstToken.isWhitelisted.toString()).to.be.eq('true');
       });
 
-      it("Should create whitelist stakes", async function () {
+
+      it("Should increase Pool USDC for whitelist", async function () {
+
          await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
+
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('800', 'ether'));
+
+         await network.provider.send('evm_mine');
+         let poolUSDC1 = await this.Staking.poolUSDC();
+         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('800', 'ether'));
+
+         await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC2 = await this.Staking.poolUSDC();
+         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('1600', 'ether'));
+
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('628', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC3 = await this.Staking.poolUSDC();
+         await expect(poolUSDC3.toString()).to.be.eq(Web3.utils.toWei('2228', 'ether'));
+
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
+         await network.provider.send('evm_mine');
+      });
+
+      it("Should increase Pool USDC for main stake", async function () {
+         await this.Staking.startLP();
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('800', 'ether'));
+
+         await network.provider.send('evm_mine');
+         let poolUSDC1 = await this.Staking.poolUSDC();
+         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('800', 'ether'));
+
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('800', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC2 = await this.Staking.poolUSDC();
+         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('1600', 'ether'));
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('628', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC3 = await this.Staking.poolUSDC();
+         await expect(poolUSDC3.toString()).to.be.eq(Web3.utils.toWei('2228', 'ether'));
+      });
+
+      it("Should increase Pool USDC whitelist + main stake", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
+
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('800', 'ether'));
+         await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'));
+
+         await network.provider.send('evm_mine');
+
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('1400', 'ether'));
+
+         await network.provider.send('evm_mine');
+         let poolUSDC1 = await this.Staking.poolUSDC();
+         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('3000', 'ether'));
+
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('2000', 'ether'));
+         await network.provider.send('evm_mine');
+
+         let poolUSDC2 = await this.Staking.poolUSDC();
+         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('5000', 'ether'));
+      });
+
+
+      it("Should create whitelist stakes", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address]);
          await network.provider.send('evm_mine');
 
          await expect(this.Staking.connect(this.Carol).whitelistStake(
@@ -142,8 +237,12 @@ describe('RubicTokenStaking', function () {
          await expect(balanceBRBC.toString()).to.be.eq(
              Web3.utils.toWei('99500', 'ether').toString()
          );
+         await expect(this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'))).to.be.revertedWith(
+            'You are not in whitelist'
+         );
 
          await network.provider.send("evm_increaseTime", [timestamp1 + 86400]);
+         await this.Staking.setWhitelist([this.Bob.address]);
          await network.provider.send('evm_mine');
          await expect(this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'))).to.be.revertedWith(
             'Whitelist staking period ended'
@@ -186,7 +285,7 @@ describe('RubicTokenStaking', function () {
          let blockNum = await ethers.provider.getBlockNumber();
          let block = await ethers.provider.getBlock(blockNum);
          let timestamp = block.timestamp;
-         await network.provider.send("evm_increaseTime", [timestamp + 5270400]);
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 5270400]);
          await network.provider.send('evm_mine');
 
          await expect(
@@ -195,171 +294,176 @@ describe('RubicTokenStaking', function () {
             'Staking period has ended'
          );
       });
-
-      it("For whitelist", async function () {
-
-         await this.Staking.startLP();
-         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
-
-         await network.provider.send('evm_mine');
-         console.log(await this.Staking.startTime());
-         let blockNum = await ethers.provider.getBlockNumber();
-         let block = await ethers.provider.getBlock(blockNum);
-         let timestamp = block.timestamp;
-         console.log(timestamp);
-         // TODO
-
-         await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('800', 'ether'));
-
-         await network.provider.send('evm_mine');
-         let poolUSDC1 = await this.Staking.poolUSDC();
-         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('800', 'ether'));
-
-         await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'));
-         await network.provider.send('evm_mine');
-
-         let poolUSDC2 = await this.Staking.poolUSDC();
-         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('1600', 'ether'));
-
-         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('628', 'ether'));
-         await network.provider.send('evm_mine');
-
-         let poolUSDC3 = await this.Staking.poolUSDC();
-         await expect(poolUSDC3.toString()).to.be.eq(Web3.utils.toWei('2228', 'ether'));
-
-         await network.provider.send('evm_increaseTime', [
-                Number(86400)
-         ]);
-         await network.provider.send('evm_mine');
-      });
-
-      it("For main stake", async function () {
-         await this.Staking.startLP();
-         await network.provider.send('evm_increaseTime', [
-                Number(86400)
-         ]);
-         await network.provider.send('evm_mine');
-
-         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('800', 'ether'));
-
-         await network.provider.send('evm_mine');
-         let poolUSDC1 = await this.Staking.poolUSDC();
-         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('800', 'ether'));
-
-         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('800', 'ether'));
-         await network.provider.send('evm_mine');
-
-         let poolUSDC2 = await this.Staking.poolUSDC();
-         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('1600', 'ether'));
-
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('628', 'ether'));
-         await network.provider.send('evm_mine');
-
-         let poolUSDC3 = await this.Staking.poolUSDC();
-         await expect(poolUSDC3.toString()).to.be.eq(Web3.utils.toWei('2228', 'ether'));
-      });
-
-      it("Whitelist + main stake", async function () {
-         await this.Staking.startLP();
-         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
-
-         await network.provider.send('evm_mine');
-
-         await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('800', 'ether'));
-         await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'));
-
-         await network.provider.send('evm_mine');
-
-         await network.provider.send('evm_increaseTime', [
-                Number(86400)
-         ]);
-         await network.provider.send('evm_mine');
-
-         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('1400', 'ether'));
-
-         await network.provider.send('evm_mine');
-         let poolUSDC1 = await this.Staking.poolUSDC();
-         await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('3000', 'ether'));
-
-         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('2000', 'ether'));
-         await network.provider.send('evm_mine');
-
-         let poolUSDC2 = await this.Staking.poolUSDC();
-         await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('5000', 'ether'));
-      });
    });
 
    describe('Transfer', () => {
-      it("Should Transfer", async function () {
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
+      it("Should transfer whitelist lp token", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address]);
+
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('655', 'ether'));
 
          await this.Staking.connect(this.Alice).transfer(this.Bob.address, 1);
 
          expect(this.Staking.connect(this.Alice).transfer(this.Bob.address, 1)).to.be.revertedWith(
                "You need to be an owner"
          );
+         let tokensBob = await this.Staking.viewTokensByOwner(this.Bob.address);
+         await expect(tokensBob.toString()).to.be.eq('1');
+         let tokensAlice = await this.Staking.viewTokensByOwner(this.Alice.address);
+         await expect(tokensAlice.toString()).to.be.eq('');
+
+         expect(this.Staking.connect(this.Alice).requestWithdraw(1)).to.be.revertedWith(
+               "You need to be an owner"
+         );
+
          await network.provider.send('evm_mine');
          // transfer back
          await this.Staking.connect(this.Bob).transfer(this.Alice.address, 1);
-         /*
-         expect(await this.Staking.connect(this.Alice).transfer('0x0000000000000000000000000000000000000000', 1)).to.be.revertedWith(
+         let tokensAliceAfter = await this.Staking.viewTokensByOwner(this.Alice.address);
+         await expect(tokensAliceAfter.toString()).to.be.eq('1');
+
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).transfer(this.Bob.address, 1);
+         await this.Staking.connect(this.Bob).requestWithdraw(1);
+
+         await network.provider.send('evm_mine');
+
+         let BobToken1 = await this.Staking.tokensLP(1);
+
+         await expect(BobToken1.isWhitelisted.toString()).to.be.eq('true');
+         await expect(BobToken1.isStaked.toString()).to.be.eq('false');
+      });
+
+      it("Should transfer main lp token", async function () {
+         await this.Staking.startLP();
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('655', 'ether'));
+
+         await this.Staking.connect(this.Alice).transfer(this.Bob.address, 1);
+
+         expect(this.Staking.connect(this.Alice).transfer(this.Bob.address, 1)).to.be.revertedWith(
+               "You need to be an owner"
+         );
+         let tokensBob = await this.Staking.viewTokensByOwner(this.Bob.address);
+         await expect(tokensBob.toString()).to.be.eq('1');
+         let tokensAlice = await this.Staking.viewTokensByOwner(this.Alice.address);
+         await expect(tokensAlice.toString()).to.be.eq('');
+
+         await network.provider.send('evm_mine');
+
+         let BobToken1 = await this.Staking.tokensLP(1);
+
+         await expect(BobToken1.isWhitelisted.toString()).to.be.eq('false');
+         await expect(BobToken1.isStaked.toString()).to.be.eq('true');
+      });
+
+      it("Should transfer token after end of staking", async function () {
+         await this.Staking.startLP();
+
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
+
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('1000', 'ether'));
+         // lp staking ended
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 5270400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).transfer(this.Bob.address, 1);
+         await this.Staking.connect(this.Alice).transfer(this.Bob.address, 2);
+
+         let tokensBob = await this.Staking.viewTokensByOwner(this.Bob.address);
+         await expect(tokensBob.toString()).to.be.eq('1,2');
+         let tokensAlice = await this.Staking.viewTokensByOwner(this.Alice.address);
+         await expect(tokensAlice.toString()).to.be.eq('');
+
+         let BobToken1 = await this.Staking.tokensLP(1);
+         let BobToken2 = await this.Staking.tokensLP(2);
+
+         await expect(BobToken1.isWhitelisted.toString()).to.be.eq('true');
+         await expect(BobToken1.isStaked.toString()).to.be.eq('true');
+
+         await expect(BobToken2.isWhitelisted.toString()).to.be.eq('false');
+         await expect(BobToken2.isStaked.toString()).to.be.eq('true');
+      });
+
+      it("Shouldn't allow to transfer lp token", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Carol.address, this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
+
+         await network.provider.send('evm_mine');
+
+         expect(this.Staking.connect(this.Alice).transfer(constants.ZERO_ADDRESS, 1)).to.be.revertedWith(
               "You can't transfer to yourself or to null address"
-         );*/
+         );
 
-         //expect(await this.Staking.connect(this.Alice).transfer(this.Alice.address, 1)).to.be.revertedWith(
-         //    "You can't transfer to yourself or to null address"
-         //);
-         /*
-         let addr = Alice.address;
-         console.log(this.Staking.ownerToTokens.addr);
-         let flag = 0;
-         // Means Alice doesn't own a token
-         for (let i = 0; i <= this.Staking.ownerToTokens(Alice.address).length; i++) {
-            if (this.Staking.ownerToTokens(Alice.address)[i] == 1){
-                    console.log(this.Staking.ownerToTokens(Alice.address)[i]);
-                    flag = 1;
-                }
-            }
-            expect(flag).to.be.equal(0);
-            let flag1 = 0;
-            for (let i = 0; i <= this.Staking.ownerToTokens(Bob.address).length; i++) {
-                if (this.Staking.ownerToTokens(Bob.address)[i] == 1){
-                    console.log(this.Staking.ownerToTokens(Alice.address)[i]);
-                    flag1 = 1;
-                }
-            }
-            expect(flag1).to.be.equal(1);*/
-
+         expect(this.Staking.connect(this.Alice).transfer(this.Alice.address, 1)).to.be.revertedWith(
+             "You can't transfer to yourself or to null address"
+         );
       });
    });
 
-   describe('Rewards ', () => {
-      it("Should add rewards, view rewards", async function () {
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('20000', 'ether'));
+   describe('Rewards', () => {
+      it("Should add rewards, view rewards for main and whitelist", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
+
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('500', 'ether'));
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('2000', 'ether'));
 
          await this.Staking.addRewards(Web3.utils.toWei('1052', 'ether'));
 
          await network.provider.send('evm_mine');
-         expect(await this.Staking.viewRewards(1) / (10 ** 18)).to.be.eq(350.6666666666667);
-         expect(await this.Staking.viewRewards(2) / (10 ** 18)).to.be.eq(701.3333333333334);
+         expect(await this.Staking.viewRewards(1) / (10 ** 18)).to.be.eq(175.33333333333334);
+         expect(await this.Staking.viewRewards(2) / (10 ** 18)).to.be.eq(175.33333333333334);
+         expect(await this.Staking.viewRewards(3) / (10 ** 18)).to.be.eq(701.3333333333334);
 
-         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('25000', 'ether'));
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('2500', 'ether'));
 
          await this.Staking.addRewards(Web3.utils.toWei('948', 'ether')); // pool now 2000$
 
-         expect(await this.Staking.viewRewards(1) / (10 ** 18)).to.be.eq(523.030303030303);
-         expect(await this.Staking.viewRewards(2) / (10 ** 18)).to.be.eq(1046.060606060606);
-         expect(await this.Staking.viewRewards(3) / (10 ** 18)).to.be.eq(430.90909090909093);
+         expect(await this.Staking.viewRewards(1) / (10 ** 18)).to.be.eq(261.5151515151515);
+         expect(await this.Staking.viewRewards(2) / (10 ** 18)).to.be.eq(261.5151515151515);
+         expect(await this.Staking.viewRewards(3) / (10 ** 18)).to.be.eq(1046.060606060606);
+         expect(await this.Staking.viewRewards(4) / (10 ** 18)).to.be.eq(430.90909090909093);
 
-         expect(523.030303030303 + 1046.060606060606 + 430.90909090909093).to.be.eq(2000);
-
+         expect(261.5151515151515 * 2 + 1046.060606060606 + 430.90909090909093).to.be.eq(2000);
       });
 
       it("Should claim Rewards", async function () {
+         await this.Staking.startLP();
 
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('10000', 'ether'));
-         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('20000', 'ether'));
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('1000', 'ether'));
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('2000', 'ether'));
 
          await this.Staking.addRewards(Web3.utils.toWei('526', 'ether'));
 
@@ -368,27 +472,31 @@ describe('RubicTokenStaking', function () {
          let rewardGrowth = await this.Staking.rewardGrowth();
 
          expect(initialToken.lastRewardGrowth.toString()).to.be.eq(rewardGrowth.toString());
-         /*
 
-         expect(this.Staking.connect(Alice).claimRewards(1)).to.be.revertedWith(
+         expect(this.Staking.connect(this.Alice).claimRewards(1)).to.be.revertedWith(
              'You have 0 rewards'
-         );*/
+         );
 
          this.Staking.addRewards(Web3.utils.toWei('50', 'ether'));
 
-         this.Staking.connect(this.Alice).transfer(this.Bob.address, 1);
-         /*
+         this.Staking.connect(this.Alice).transfer(this.Bob.address, 2);
 
-          expect(this.Staking.connect(Alice).claimRewards(1)).to.be.revertedWith(
+         expect(this.Staking.connect(this.Alice).claimRewards(2)).to.be.revertedWith(
                 "You need to be an owner"
-            );
+         );
 
-            expect(this.Staking.connect(Alice).claimRewards(0)).to.be.revertedWith(
-                "Token 0 is empty"
-            );*/
+         expect(this.Staking.connect(this.Alice).claimRewards(0)).to.be.revertedWith(
+                "You need to be an owner"
+         );
+         const balanceUSDCBobBefore = await this.USDC.balanceOf(this.Bob.address) / (10 ** 18);
+         const bobRewards = await this.Staking.viewRewards(2) / (10 ** 18);
 
-         this.Staking.connect(this.Bob).claimRewards(1);
+         await this.Staking.connect(this.Bob).claimRewards(2);
 
+         const balanceUSDC = await this.USDC.balanceOf(this.Bob.address) / (10 ** 18);
+         await expect(balanceUSDC).to.be.eq(
+             Number(balanceUSDCBobBefore) + Number(bobRewards)
+         );
       });
    });
 });
