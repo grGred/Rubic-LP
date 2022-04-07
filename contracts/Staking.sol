@@ -347,7 +347,7 @@ contract Staking is RubicLP {
             _rewardsToCollect[i] = viewRewards(_tokens[i]);
             _isWithdrawable[i] = viewApprovedWithdrawToken(_tokens[i]);
         }
-        return (_parsedArrayOfTokens, _collectedRewards, _rewardsToCollect, isWithdrawable);
+        return (_parsedArrayOfTokens, _collectedRewards, _rewardsToCollect, _isWithdrawable);
     }
 
     /// @dev calculates current apr for each day

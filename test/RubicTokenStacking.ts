@@ -498,5 +498,277 @@ describe('RubicTokenStaking', function () {
              Number(balanceUSDCBobBefore) + Number(bobRewards)
          );
       });
+
+       it("Should not add rewards when transfering USDC directly to LP", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
+
+         await this.USDC.transfer(this.Staking.address, Web3.utils.toWei('100', 'ether'));
+
+         expect(await this.Staking.viewRewards(1)).to.be.eq(0);
+      });
+
+       it("Should show zero when viewing initial token", async function () {
+         expect(await this.Staking.viewRewards(0)).to.be.eq(0);
+      });
+   });
+
+   describe('ERC721 logic', () => {
+      it("Should revert transfer from", async function () {
+         await expect(this.Staking.connect(this.Alice).transferFrom(
+             constants.ZERO_ADDRESS,
+             constants.ZERO_ADDRESS,
+             1)
+         ).to.be.revertedWith(
+             "transferFrom forbidden"
+         );
+
+         // Strange hardhat revert caused by matching func names
+         // await expect(this.Staking.connect(this.Alice).safeTransferFrom(
+         //     constants.ZERO_ADDRESS,
+         //     constants.ZERO_ADDRESS,
+         //     1,
+         //     '0x')
+         // ).to.be.revertedWith(
+         //     "transferFrom forbidden"
+         // );
+
+         // await expect(this.Staking.connect(this.Alice).safeTransferFrom(
+         //     constants.ZERO_ADDRESS,
+         //     constants.ZERO_ADDRESS,
+         //     1)
+         // ).to.be.revertedWith(
+         //     "transferFrom forbidden"
+         // );
+      });
+      it("Should revert approve", async function () {
+         await expect(this.Staking.connect(this.Alice).isApprovedForAll(
+             constants.ZERO_ADDRESS,
+             constants.ZERO_ADDRESS)
+         ).to.be.revertedWith(
+             "Approve forbidden"
+         );
+
+         await expect(this.Staking.connect(this.Alice).setApprovalForAll(
+             constants.ZERO_ADDRESS,
+             "true")
+         ).to.be.revertedWith(
+             "Approve forbidden"
+         );
+
+         await expect(this.Staking.connect(this.Alice).getApproved(
+             1)
+         ).to.be.revertedWith(
+             "Approve forbidden"
+         );
+
+         await expect(this.Staking.connect(this.Alice).approve(
+             constants.ZERO_ADDRESS,
+             1)
+         ).to.be.revertedWith(
+             "Approve forbidden"
+         );
+      });
+   });
+
+   describe('Withdraw', () => {
+      it("Should request tokens without penalty", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
+
+         expect(this.Staking.connect(this.Alice).requestWithdraw(0)).to.be.revertedWith(
+                "You need to be an owner"
+         );
+
+         expect(this.Staking.connect(this.Alice).requestWithdraw(2)).to.be.revertedWith(
+                "You need to be an owner"
+         );
+
+         const AliceFirstWhitelist = await this.Staking.tokensLP(1);
+         await expect(AliceFirstWhitelist.isWhitelisted.toString()).to.be.eq('true');
+         await expect(AliceFirstWhitelist.isStaked.toString()).to.be.eq('true');
+
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 5270400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         const AliceFirstWhitelistAfter = await this.Staking.tokensLP(1);
+         await expect(AliceFirstWhitelistAfter.isStaked.toString()).to.be.eq('false');
+
+         await expect(AliceFirstWhitelistAfter.USDCAmount.toString()).to.be.eq
+         (Web3.utils.toWei('600', 'ether')
+         );
+
+         await expect((await this.Staking.requestedAmount()).toString()).to.be.eq(
+             Web3.utils.toWei('600', 'ether')
+         );
+
+         expect(this.Staking.connect(this.Alice).requestWithdraw(1)).to.be.revertedWith(
+                "Stake requested for withdraw"
+         );
+      });
+
+      it("Should request tokens with penalty", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
+
+         await this.Staking.addRewards(Web3.utils.toWei('100', 'ether'));
+
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         const AliceFirstToken = await this.Staking.tokensLP(1);
+
+         await expect(AliceFirstToken.USDCAmount.toString()).to.be.eq
+            (Web3.utils.toWei('540', 'ether')
+         );
+
+         await expect(AliceFirstToken.BRBCAmount.toString()).to.be.eq
+            (Web3.utils.toWei('540', 'ether')
+         );
+
+         await expect((await this.Staking.requestedAmount()).toString()).to.be.eq(
+             Web3.utils.toWei('540', 'ether')
+         );
+
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('1000', 'ether'));
+         await this.Staking.connect(this.Alice).requestWithdraw(2);
+
+         const AliceSecondToken = await this.Staking.tokensLP(2);
+
+         await expect(AliceSecondToken.USDCAmount.toString()).to.be.eq
+            (Web3.utils.toWei('900', 'ether')
+         );
+
+         await expect(AliceSecondToken.BRBCAmount.toString()).to.be.eq
+            (Web3.utils.toWei('900', 'ether')
+         );
+
+         await expect((await this.Staking.requestedAmount()).toString()).to.be.eq(
+             Web3.utils.toWei('1440', 'ether')
+         );
+      });
+
+      it("Should claim rewards before request", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
+
+         await this.Staking.addRewards(Web3.utils.toWei('100', 'ether'));
+         const balanceUSDCBefore = await this.USDC.balanceOf(this.Alice.address) / (10 ** 18);
+         const AliceRewards = await this.Staking.viewRewards(1) / (10 ** 18);
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         const balanceUSDCAfter = await this.USDC.balanceOf(this.Alice.address) / (10 ** 18);
+
+         await expect(balanceUSDCAfter).to.be.eq(
+             Number(balanceUSDCBefore) + Number(AliceRewards)
+         );
+      });
+
+      it("Should fundRequests", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
+
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         await this.Staking.fundRequests();
+
+         const balanceUSDCStaking = await this.USDC.balanceOf(this.Staking.address);
+         const balanceBRBCStaking = await this.BRBC.balanceOf(this.Staking.address);
+
+         await expect(balanceUSDCStaking).to.be.eq
+            (Web3.utils.toWei('540', 'ether')
+         );
+
+         await expect(balanceBRBCStaking).to.be.eq
+            (Web3.utils.toWei('540', 'ether')
+         );
+      });
+
+      it("Should withdraw and burn token", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
+
+         const tokensAliceBefore = await this.Staking.viewTokensByOwner(this.Alice.address);
+         await expect(tokensAliceBefore.toString()).to.be.eq('1');
+
+         await expect(this.Staking.connect(this.Alice).withdraw(1)).to.be.revertedWith(
+                "Request withdraw first"
+         );
+
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         await expect(this.Staking.connect(this.Bob).withdraw(1)).to.be.revertedWith(
+                "You need to be an owner"
+         );
+
+         await expect(this.Staking.connect(this.Alice).withdraw(1)).to.be.revertedWith(
+                "Request in process"
+         );
+
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 86400]);
+         await network.provider.send('evm_mine');
+
+         await expect(this.Staking.connect(this.Alice).withdraw(1)).to.be.revertedWith(
+                "Funds hasnt arrived yet"
+         );
+
+         await this.Staking.fundRequests();
+
+         const balanceUSDCBefore = await this.USDC.balanceOf(this.Alice.address) / (10 ** 18);
+         const balanceBRBCBefore = await this.BRBC.balanceOf(this.Alice.address) / (10 ** 18);
+
+         await this.Staking.connect(this.Alice).withdraw(1);
+
+         const balanceUSDCAfter = await this.USDC.balanceOf(this.Alice.address) / (10 ** 18);
+         const balanceBRBCAfter = await this.BRBC.balanceOf(this.Alice.address) / (10 ** 18);
+
+         await expect(balanceUSDCAfter).to.be.eq(
+             Number(balanceUSDCBefore) + 540000000000000000000 / (10 ** 18)
+         );
+
+         await expect(balanceBRBCAfter).to.be.eq(
+             Number(balanceBRBCBefore) + 540000000000000000000 / (10 ** 18)
+         );
+
+         const tokensAliceAfter = await this.Staking.viewTokensByOwner(this.Alice.address);
+         await expect(tokensAliceAfter.toString()).to.be.eq('');
+      });
+   });
+
+   describe('View', () => {
+      it.only("Should return infoAboutDepositsParsed correctly", async function () {
+         await this.Staking.startLP();
+         await this.Staking.setWhitelist([this.Alice.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
+
+         const log = await this.Staking.infoAboutDepositsParsed(this.Alice.address)
+         console.log(log);
+         //const tokens = await this.Staking.viewTokensByOwner(this.Alice.address);
+         //console.log(tokens);
+         //const bool = await this.Staking.viewApprovedWithdrawToken(Number(tokens[0]));
+         //console.log(bool);
+      });
    });
 });
