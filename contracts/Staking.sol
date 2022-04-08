@@ -51,9 +51,9 @@ contract Staking is RubicLP {
 
         // test
 
-//        requestTime = 5 minutes;
-//        whitelistTime = 10 minutes;
-//        lpDuration = 25 minutes;
+//        requestTime = 20 minutes;
+//        whitelistTime = 20 minutes;
+//        lpDuration = 1220 minutes;
 //
 //        minUSDCAmount = 5 * 10**decimals;
 //        maxUSDCAmount = 50 * 10**decimals;

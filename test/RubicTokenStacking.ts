@@ -701,6 +701,78 @@ describe('RubicTokenStaking', function () {
          );
       });
 
+      it("Should enter after penalty", async function () {
+         await this.Staking.startLP();
+
+         let blockNum0 = await ethers.provider.getBlockNumber();
+         let block0 = await ethers.provider.getBlock(blockNum0);
+         let timestamp0 = block0.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp0 + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.setMaxPoolUSDC(Web3.utils.toWei('10000', 'ether'));
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('5000', 'ether'));
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('5000', 'ether'));
+
+         let poolUSDCBefore = await this.Staking.poolUSDC();
+         await expect(poolUSDCBefore).to.be.eq(Web3.utils.toWei('10000', 'ether'));
+         // early unstake
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         let poolUSDCAfter = await this.Staking.poolUSDC();
+         await expect(poolUSDCAfter).to.be.eq(Web3.utils.toWei('9500', 'ether'));
+
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('500', 'ether'));
+
+         let poolUSDCEnd = await this.Staking.poolUSDC();
+         await expect(poolUSDCEnd).to.be.eq(Web3.utils.toWei('10000', 'ether'));
+      });
+
+      it("Should enter after withdraw", async function () {
+         await this.Staking.startLP();
+
+         let blockNum0 = await ethers.provider.getBlockNumber();
+         let block0 = await ethers.provider.getBlock(blockNum0);
+         let timestamp0 = block0.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp0 + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.setMaxPoolUSDC(Web3.utils.toWei('10000', 'ether'));
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('5000', 'ether'));
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('5000', 'ether'));
+
+         let poolUSDCBefore = await this.Staking.poolUSDC();
+
+         await expect(poolUSDCBefore).to.be.eq(Web3.utils.toWei('10000', 'ether'));
+         // early unstake
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         let poolUSDCAfter = await this.Staking.poolUSDC();
+         await expect(poolUSDCAfter).to.be.eq(Web3.utils.toWei('9500', 'ether'));
+
+         let blockNum1 = await ethers.provider.getBlockNumber();
+         let block1 = await ethers.provider.getBlock(blockNum1);
+         let timestamp1 = block1.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp1 + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.fundRequests();
+
+         await this.Staking.connect(this.Alice).withdraw(1);
+
+         let poolUSDCEnd = await this.Staking.poolUSDC();
+         await expect(poolUSDCEnd).to.be.eq(Web3.utils.toWei('5000', 'ether'));
+
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('5000', 'ether'));
+
+         await expect(await this.Staking.poolUSDC()).to.be.eq(Web3.utils.toWei('10000', 'ether'));
+      });
+
       it("Should withdraw and burn token", async function () {
          await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
@@ -758,17 +830,12 @@ describe('RubicTokenStaking', function () {
    });
 
    describe('View', () => {
-      it.only("Should return infoAboutDepositsParsed correctly", async function () {
+      it("Should return infoAboutDepositsParsed correctly", async function () {
          await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
 
          const log = await this.Staking.infoAboutDepositsParsed(this.Alice.address)
-         console.log(log);
-         //const tokens = await this.Staking.viewTokensByOwner(this.Alice.address);
-         //console.log(tokens);
-         //const bool = await this.Staking.viewApprovedWithdrawToken(Number(tokens[0]));
-         //console.log(bool);
       });
    });
 });

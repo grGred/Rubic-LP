@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import './AcessControl.sol';
+import '@openzeppelin/contracts/access/AccessControl.sol';
 import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract SetParams is AccessControl {
