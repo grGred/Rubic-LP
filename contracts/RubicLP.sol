@@ -103,7 +103,6 @@ contract RubicLP is ERC721, SetParams {
         ownerToTokens[_from].remove(_tokenId);
         ownerToTokens[_to].add(_tokenId);
         _transfer(_from, _to, _tokenId);
-        emit Transfer(_from, _to, _tokenId);
     }
 
     // ERC721 override functions

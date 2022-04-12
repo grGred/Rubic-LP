@@ -38,29 +38,29 @@ contract Staking is RubicLP {
         penalty = 10;
         // set up pool size
 
-        requestTime = 1 days;
-        whitelistTime = 1 days;
-        lpDuration = 61 days;
-
-        minUSDCAmount = 500 * 10**decimals;
-        maxUSDCAmount = 5000 * 10**decimals;
-        maxUSDCAmountWhitelist = 800 * 10**decimals;
-
-        maxPoolUSDC = 800_000 * 10**decimals;
-        maxPoolBRBC = 800_000 * 10**decimals;
+//        requestTime = 1 days;
+//        whitelistTime = 1 days;
+//        lpDuration = 61 days;
+//
+//        minUSDCAmount = 500 * 10**decimals;
+//        maxUSDCAmount = 5000 * 10**decimals;
+//        maxUSDCAmountWhitelist = 800 * 10**decimals;
+//
+//        maxPoolUSDC = 800_000 * 10**decimals;
+//        maxPoolBRBC = 800_000 * 10**decimals;
 
         // test
 
-//        requestTime = 20 minutes;
-//        whitelistTime = 20 minutes;
-//        lpDuration = 1220 minutes;
-//
-//        minUSDCAmount = 5 * 10**decimals;
-//        maxUSDCAmount = 50 * 10**decimals;
-//        maxUSDCAmountWhitelist = 8 * 10**decimals;
-//
-//        maxPoolUSDC = 80 * 10**decimals;
-//        maxPoolBRBC = 80 * 10**decimals;
+        requestTime = 20 minutes;
+        whitelistTime = 20 minutes;
+        lpDuration = 1220 minutes;
+
+        minUSDCAmount = 5 * 10**decimals;
+        maxUSDCAmount = 50 * 10**decimals;
+        maxUSDCAmountWhitelist = 8 * 10**decimals;
+
+        maxPoolUSDC = 100 * 10**decimals;
+        maxPoolBRBC = 100 * 10**decimals;
 
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
@@ -304,14 +304,9 @@ contract Staking is RubicLP {
         return _result;
     }
 
-    /// @dev list of all tokens that an address owns
-    /// @param _tokenOwner the owner address
-    /// returns uint array of token ids
     function viewTokensByOwner(address _tokenOwner) public view returns (uint256[] memory tokenList) {
         uint256[] memory _result = new uint256[](ownerToTokens[_tokenOwner].length());
-        for (uint256 i = 0; i < ownerToTokens[_tokenOwner].length(); i++) {
-            _result[i] = (ownerToTokens[_tokenOwner].at(i));
-        }
+        _result = ownerToTokens[_tokenOwner].values();
         return _result;
     }
 
@@ -410,7 +405,7 @@ contract Staking is RubicLP {
         if (
             tokensLP[_tokenId].isStaked == false &&
             tokensLP[_tokenId].deadline < block.timestamp &&
-            tokensLP[_tokenId].USDCAmount >= USDC.balanceOf(address(this))
+            tokensLP[_tokenId].USDCAmount <= USDC.balanceOf(address(this))
         ) {
             return true;
         }
