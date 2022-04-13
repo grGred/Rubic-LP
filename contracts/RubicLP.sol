@@ -14,9 +14,9 @@ contract RubicLP is ERC721, SetParams {
     IERC20 public immutable USDC;
     IERC20 public immutable BRBC;
 
-    constructor(address usdcTest, address brbcTest) ERC721('Rubic LP Token', 'RLP') {
-        USDC = IERC20(usdcTest);
-        BRBC = IERC20(brbcTest);
+    constructor(address usdcAddress, address brbcAddress) ERC721('Rubic LP Token', 'RLP') {
+        USDC = IERC20(usdcAddress);
+        BRBC = IERC20(brbcAddress);
     }
 
     // USDC amount in
@@ -62,7 +62,7 @@ contract RubicLP is ERC721, SetParams {
         uint256 _tokenId = tokensLP.length;
         tokensLP.push(
             TokenLP(
-                tokensLP.length,
+                _tokenId,
                 _USDCAmount,
                 _USDCAmount,
                 uint32(block.timestamp),

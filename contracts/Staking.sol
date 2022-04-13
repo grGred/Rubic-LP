@@ -123,7 +123,7 @@ contract Staking is RubicLP {
         _mintLP(_amountUSDC, true);
     }
 
-    /// @dev Main function, which recieves deposit, calls _mintLP LP function, freeze funds
+    /// @dev Main function, which receives deposit, calls _mintLP LP function, freeze funds
     /// @param _amountUSDC the amount in of USDC
     function stake(uint256 _amountUSDC) external maxStakeAmount(_amountUSDC, maxUSDCAmount) {
         require(block.timestamp >= startTime + whitelistTime, "Staking period hasn't started");
@@ -305,9 +305,7 @@ contract Staking is RubicLP {
     }
 
     function viewTokensByOwner(address _tokenOwner) public view returns (uint256[] memory tokenList) {
-        uint256[] memory _result = new uint256[](ownerToTokens[_tokenOwner].length());
-        _result = ownerToTokens[_tokenOwner].values();
-        return _result;
+        return ownerToTokens[_tokenOwner].values();
     }
 
     /// @dev parsed array with all data from token ids
