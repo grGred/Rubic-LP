@@ -512,6 +512,44 @@ describe('RubicTokenStaking', function () {
        it("Should show zero when viewing initial token", async function () {
          expect(await this.Staking.viewRewards(0)).to.be.eq(0);
       });
+
+       it("Should change reward amount after leaving", async function () {
+         await this.Staking.startLP();
+
+         let blockNum = await ethers.provider.getBlockNumber();
+         let block = await ethers.provider.getBlock(blockNum);
+         let timestamp = block.timestamp;
+
+         await network.provider.send("evm_setNextBlockTimestamp", [timestamp + 86400]);
+         await network.provider.send('evm_mine');
+
+         await this.Staking.connect(this.Alice).stake(Web3.utils.toWei('500', 'ether'));
+         await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('600', 'ether'));
+
+         await this.Staking.addRewards(Web3.utils.toWei('1000', 'ether'));
+
+         await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('600', 'ether'));
+
+         await expect(await this.Staking.viewRewards(1) / (10 ** 18)).to.be.eq(454.54545454545456);
+         await expect(await this.Staking.viewRewards(2) / (10 ** 18)).to.be.eq(545.4545454545454);
+         await expect(await this.Staking.viewRewards(3)).to.be.eq(0);
+
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         await expect(await this.Staking.viewRewards(1)).to.be.eq(0);
+         await expect(await this.Staking.viewRewards(2) / (10 ** 18)).to.be.eq(545.4545454545454);
+         await expect(await this.Staking.viewRewards(3)).to.be.eq(0);
+
+         await this.Staking.addRewards(Web3.utils.toWei('1000', 'ether'));
+
+         let rewardsFirstToken = Number(await this.Staking.viewRewards(1) / (10 ** 18));
+         let rewardsSecondToken = Number(await this.Staking.viewRewards(2) / (10 ** 18));
+         let rewardsThirdToken = Number(await this.Staking.viewRewards(3) / (10 ** 18));
+
+         await expect(rewardsFirstToken+rewardsSecondToken+rewardsThirdToken).to.be.eq(
+             2000 - 454.54545454545456
+         );
+      });
    });
 
    describe('ERC721 logic', () => {
@@ -701,7 +739,7 @@ describe('RubicTokenStaking', function () {
          );
       });
 
-      it("Should enter after penalty", async function () {
+      it("Should enter after request", async function () {
          await this.Staking.startLP();
 
          let blockNum0 = await ethers.provider.getBlockNumber();
@@ -722,12 +760,12 @@ describe('RubicTokenStaking', function () {
          await this.Staking.connect(this.Alice).requestWithdraw(1);
 
          let poolUSDCAfter = await this.Staking.poolUSDC();
-         await expect(poolUSDCAfter).to.be.eq(Web3.utils.toWei('9500', 'ether'));
+         await expect(poolUSDCAfter).to.be.eq(Web3.utils.toWei('5000', 'ether'));
 
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('500', 'ether'));
 
          let poolUSDCEnd = await this.Staking.poolUSDC();
-         await expect(poolUSDCEnd).to.be.eq(Web3.utils.toWei('10000', 'ether'));
+         await expect(poolUSDCEnd).to.be.eq(Web3.utils.toWei('5500', 'ether'));
       });
 
       it("Should enter after withdraw", async function () {
@@ -752,7 +790,7 @@ describe('RubicTokenStaking', function () {
          await this.Staking.connect(this.Alice).requestWithdraw(1);
 
          let poolUSDCAfter = await this.Staking.poolUSDC();
-         await expect(poolUSDCAfter).to.be.eq(Web3.utils.toWei('9500', 'ether'));
+         await expect(poolUSDCAfter).to.be.eq(Web3.utils.toWei('5000', 'ether'));
 
          let blockNum1 = await ethers.provider.getBlockNumber();
          let block1 = await ethers.provider.getBlock(blockNum1);

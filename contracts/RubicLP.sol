@@ -85,8 +85,6 @@ contract RubicLP is ERC721, SetParams {
     /// @dev Internal function which burns LP tokens, clears data from mappings, arrays
     /// @param _tokenId token id that will be burnt
     function _burnLP(uint256 _tokenId) internal {
-        poolUSDC -= tokensLP[_tokenId].USDCAmount;
-        poolBRBC -= tokensLP[_tokenId].BRBCAmount;
         ownerToTokens[msg.sender].remove(_tokenId);
         _burn(_tokenId);
     }

@@ -37,30 +37,30 @@ contract Staking is RubicLP {
         // Set up penalty amount in % / 10
         penalty = 100;
         // set up pool size
-//
-//        requestTime = 1 days;
-//        whitelistTime = 1 days;
-//        lpDuration = 61 days;
-//
-//        minUSDCAmount = 500 * 10**decimals;
-//        maxUSDCAmount = 5000 * 10**decimals;
-//        maxUSDCAmountWhitelist = 800 * 10**decimals;
-//
-//        maxPoolUSDC = 800_000 * 10**decimals;
-//        maxPoolBRBC = 800_000 * 10**decimals;
+
+        requestTime = 1 days;
+        whitelistTime = 1 days;
+        lpDuration = 61 days;
+
+        minUSDCAmount = 500 * 10**decimals;
+        maxUSDCAmount = 5000 * 10**decimals;
+        maxUSDCAmountWhitelist = 800 * 10**decimals;
+
+        maxPoolUSDC = 800_000 * 10**decimals;
+        maxPoolBRBC = 800_000 * 10**decimals;
 
         // test
 
-        requestTime = 30 minutes;
-        whitelistTime = 30 minutes;
-        lpDuration = 1830 minutes;
-
-        minUSDCAmount = 5 * 10**decimals;
-        maxUSDCAmount = 50 * 10**decimals;
-        maxUSDCAmountWhitelist = 8 * 10**decimals;
-
-        maxPoolUSDC = 100 * 10**decimals;
-        maxPoolBRBC = 100 * 10**decimals;
+//        requestTime = 30 minutes;
+//        whitelistTime = 30 minutes;
+//        lpDuration = 1830 minutes;
+//
+//        minUSDCAmount = 5 * 10**decimals;
+//        maxUSDCAmount = 50 * 10**decimals;
+//        maxUSDCAmountWhitelist = 8 * 10**decimals;
+//
+//        maxPoolUSDC = 100 * 10**decimals;
+//        maxPoolBRBC = 100 * 10**decimals;
 
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
@@ -184,6 +184,8 @@ contract Staking is RubicLP {
         // ready for withdraw next day
         tokensLP[_tokenId].deadline = uint32(block.timestamp + requestTime);
         requestedAmount += tokensLP[_tokenId].USDCAmount;
+        poolUSDC -= tokensLP[_tokenId].USDCAmount;
+        poolBRBC -= tokensLP[_tokenId].BRBCAmount;
         emit RequestWithdraw(msg.sender, _tokenId, tokensLP[_tokenId].USDCAmount, tokensLP[_tokenId].BRBCAmount);
     }
 
