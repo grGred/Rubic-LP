@@ -85,7 +85,7 @@ contract SetParams is AccessControl {
     /// @dev onlyManager function, sets penalty that will be taken for early unstake
     /// @param _penalty amount in percent, sets from 0% to 100% of users stake
     function setPenalty(uint256 _penalty) external onlyManager {
-        require(_penalty >= 0 && _penalty <= 100, 'Incorrect penalty');
+        require(_penalty >= 0 && _penalty <= 1000, 'Incorrect penalty');
         penalty = _penalty;
     }
 

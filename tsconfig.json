@@ -8,7 +8,9 @@
     "outDir": "dist",
     "typeRoots": ["./typechain", "./node_modules/@types", "./types"],
     "types": ["@nomiclabs/hardhat-ethers", "@nomiclabs/hardhat-waffle"],
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "include": ["./test"],
   "files": ["./hardhat.config.ts"]

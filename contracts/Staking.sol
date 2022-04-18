@@ -32,12 +32,12 @@ contract Staking is RubicLP {
     constructor(address usdcAddr, address brbcAddr) RubicLP(usdcAddr, brbcAddr) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MANAGER, msg.sender);
-        _setupRole(MANAGER, 0x186915891222aDD6E2108061A554a1F400a25cbD);
+        _setupRole(MANAGER, 0x8796e04d35bA0251Fa71d9bC89937bED766970E3);
 
-        // Set up penalty amount in %
-        penalty = 10;
+        // Set up penalty amount in % / 10
+        penalty = 100;
         // set up pool size
-
+//
 //        requestTime = 1 days;
 //        whitelistTime = 1 days;
 //        lpDuration = 61 days;
@@ -51,9 +51,9 @@ contract Staking is RubicLP {
 
         // test
 
-        requestTime = 20 minutes;
-        whitelistTime = 20 minutes;
-        lpDuration = 1220 minutes;
+        requestTime = 30 minutes;
+        whitelistTime = 30 minutes;
+        lpDuration = 1830 minutes;
 
         minUSDCAmount = 5 * 10**decimals;
         maxUSDCAmount = 50 * 10**decimals;
@@ -190,8 +190,8 @@ contract Staking is RubicLP {
     /// @dev penalizes user, transfer his USDC and BRBC to penaty address
     /// @param _tokenId the token id
     function _penalizeAddress(uint256 _tokenId) internal {
-        uint256 penaltyAmountBRBC = (tokensLP[_tokenId].BRBCAmount * penalty) / 100;
-        uint256 penaltyAmountUSDC = (tokensLP[_tokenId].USDCAmount * penalty) / 100;
+        uint256 penaltyAmountBRBC = (tokensLP[_tokenId].BRBCAmount * penalty) / 1000;
+        uint256 penaltyAmountUSDC = (tokensLP[_tokenId].USDCAmount * penalty) / 1000;
         poolBRBC -= penaltyAmountBRBC;
         poolUSDC -= penaltyAmountUSDC;
         tokensLP[_tokenId].BRBCAmount -= penaltyAmountBRBC;
@@ -219,7 +219,7 @@ contract Staking is RubicLP {
     }
 
     function fundRequests() external onlyManager {
-        require(requestedAmount > USDC.balanceOf(address(this)), 'enough funds');
+        require(requestedAmount > USDC.balanceOf(address(this)), 'No need to fund');
         USDC.transferFrom(msg.sender, address(this), requestedAmount - USDC.balanceOf(address(this)));
     }
 

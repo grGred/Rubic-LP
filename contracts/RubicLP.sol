@@ -108,21 +108,19 @@ contract RubicLP is ERC721, SetParams {
     // ERC721 override functions
 
     function approve(address, uint256) public virtual override {
-        require(false, 'Approve forbidden');
+        revert('Approve forbidden');
     }
 
-    function getApproved(uint256) public view virtual override returns (address) {
-        require(false, 'Approve forbidden');
-        return address(0);
+    function getApproved(uint256) public view virtual override returns (address operator) {
+        revert('Approve forbidden');
     }
 
     function setApprovalForAll(address, bool) public virtual override {
-        require(false, 'Approve forbidden');
+        revert('Approve forbidden');
     }
 
-    function isApprovedForAll(address, address) public view virtual override returns (bool) {
-        require(false, 'Approve forbidden');
-        return false;
+    function isApprovedForAll(address, address) public view virtual override returns (bool flag) {
+        revert('Approve forbidden');
     }
 
     function transferFrom(
@@ -130,7 +128,7 @@ contract RubicLP is ERC721, SetParams {
         address,
         uint256
     ) public virtual override {
-        require(false, 'transferFrom forbidden');
+        revert('transferFrom forbidden');
     }
 
     function safeTransferFrom(
@@ -138,7 +136,7 @@ contract RubicLP is ERC721, SetParams {
         address,
         uint256
     ) public virtual override {
-        require(false, 'transferFrom forbidden');
+        revert('transferFrom forbidden');
     }
 
     function safeTransferFrom(
@@ -147,7 +145,7 @@ contract RubicLP is ERC721, SetParams {
         uint256,
         bytes memory
     ) public virtual override {
-        require(false, 'transferFrom forbidden');
+        revert('transferFrom forbidden');
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, AccessControl) returns (bool) {
