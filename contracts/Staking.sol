@@ -32,7 +32,7 @@ contract Staking is RubicLP {
     constructor(address usdcAddr, address brbcAddr) RubicLP(usdcAddr, brbcAddr) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MANAGER, msg.sender);
-        _setupRole(MANAGER, 0x8796e04d35bA0251Fa71d9bC89937bED766970E3);
+        _setupRole(MANAGER, 0xafcAb7104657eeF1b1a0FB5f3B3a02E090cEbdBd);
 
         // Set up penalty amount in % / 10
         penalty = 100;
@@ -51,9 +51,9 @@ contract Staking is RubicLP {
 
         // test
 
-//        requestTime = 30 minutes;
-//        whitelistTime = 30 minutes;
-//        lpDuration = 1830 minutes;
+//        requestTime = 10 minutes;
+//        whitelistTime = 10 minutes;
+//        lpDuration = 610 minutes;
 //
 //        minUSDCAmount = 5 * 10**decimals;
 //        maxUSDCAmount = 50 * 10**decimals;
@@ -61,6 +61,9 @@ contract Staking is RubicLP {
 //
 //        maxPoolUSDC = 100 * 10**decimals;
 //        maxPoolBRBC = 100 * 10**decimals;
+
+        startTime = uint32(1650466800);
+        endTime = startTime + lpDuration;
 
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
     }
@@ -209,7 +212,6 @@ contract Staking is RubicLP {
         require(tokensLP[_tokenId].USDCAmount <= USDC.balanceOf(address(this)), 'Funds hasnt arrived yet');
         uint256 _withdrawAmount = tokensLP[_tokenId].USDCAmount;
         _burnLP(_tokenId);
-        requestedAmount -= _withdrawAmount;
         USDC.transfer(msg.sender, _withdrawAmount);
         BRBC.transfer(msg.sender, _withdrawAmount);
         emit Withdraw(address(this), msg.sender, _tokenId, _withdrawAmount, _withdrawAmount);
@@ -221,13 +223,9 @@ contract Staking is RubicLP {
     }
 
     function fundRequests() external onlyManager {
-        require(requestedAmount > USDC.balanceOf(address(this)), 'No need to fund');
-        USDC.transferFrom(msg.sender, address(this), requestedAmount - USDC.balanceOf(address(this)));
-    }
-
-    function startLP() external onlyManager {
-        startTime = uint32(block.timestamp);
-        endTime = startTime + lpDuration;
+        require(requestedAmount > 0, "No need to fund");
+        USDC.transferFrom(msg.sender, address(this), requestedAmount);
+        requestedAmount = 0;
     }
 
     ///////////////////////// view functions below ////////////////////////////

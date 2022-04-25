@@ -9,9 +9,9 @@ contract SetParams is AccessControl {
     using EnumerableSet for EnumerableSet.AddressSet;
     /// Cross chain address where USDC goes
 
-    address public crossChain = 0xD5C76fAE5398C35274aB9481B389BC38E28c82E6;
+    address public crossChain = 0x70e8C8139d1ceF162D5ba3B286380EB5913098c4;
     /// Changeable address of BRBC receiver
-    address public penaltyReceiver = 0xD5C76fAE5398C35274aB9481B389BC38E28c82E6;
+    address public penaltyReceiver = 0x3483eD7d3444A311a7585F0e59C9A74d6C111218;
     uint8 internal constant decimals = 18;
 
     EnumerableSet.AddressSet internal whitelist;

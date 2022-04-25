@@ -14,9 +14,8 @@ async function main() {
 
   await new Promise(r => setTimeout(r, 10000));
   await RubicTokenStakerDeploy.setWhitelist([
-      '0x186915891222aDD6E2108061A554a1F400a25cbD',
-      '0x60a4dae96386e8c6D8535f2463a00b4A40fae6eF',
-      '0xcc513C5e4F396e68C15282cFa02D3E9c615cd714',
+      '0x105A3BA3637A29D36F61c7F03f55Da44B4591Cd1',
+      '0x60a4dae96386e8c6D8535f2463a00b4A40fae6eF'
   ]);
 
   await hre.run("verify:verify", {
