@@ -61,45 +61,34 @@ describe('RubicTokenStaking', function () {
          expect(initialToken.lastRewardGrowth.toString()).to.be.eq('0');
       });
 
-      it("Should start LP", async function () {
+      it("Should not allow entering after time", async function () {
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
          await network.provider.send('evm_mine');
 
          await expect(this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('701', 'ether'))).to.be.revertedWith(
             'Whitelist staking period ended'
          );
+         await network.provider.send('evm_increaseTime', [
+                Number(86400*61)
+         ]);
+         await network.provider.send('evm_mine');
          await expect(this.Staking.connect(this.Alice).stake(Web3.utils.toWei('702', 'ether'))).to.be.revertedWith(
             'Staking period has ended'
          );
-         await expect(this.Staking.connect(this.Alice).startLP()).to.be.revertedWith(
-            'Caller is not a manager'
-         );
-         await this.Staking.startLP();
-         await network.provider.send('evm_mine');
-
-         await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('703', 'ether'));
-         await network.provider.send('evm_mine');
-
-         let firstToken = await this.Staking.tokensLP(1);
-         await expect(firstToken.isWhitelisted.toString()).to.be.eq('true');
       });
 
-
       it("Should increase Pool USDC for whitelist", async function () {
-
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
-
-         await network.provider.send('evm_mine');
 
          await this.Staking.connect(this.Carol).whitelistStake(Web3.utils.toWei('800', 'ether'));
 
-         await network.provider.send('evm_mine');
          let poolUSDC1 = await this.Staking.poolUSDC();
          await expect(poolUSDC1.toString()).to.be.eq(Web3.utils.toWei('800', 'ether'));
 
          await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'));
-         await network.provider.send('evm_mine');
 
          let poolUSDC2 = await this.Staking.poolUSDC();
          await expect(poolUSDC2.toString()).to.be.eq(Web3.utils.toWei('1600', 'ether'));
@@ -117,7 +106,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should increase Pool USDC for main stake", async function () {
-         await this.Staking.startLP();
          await network.provider.send('evm_increaseTime', [
                 Number(86400)
          ]);
@@ -143,7 +131,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should increase Pool USDC whitelist + main stake", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address, this.Bob.address]);
 
          await network.provider.send('evm_mine');
@@ -173,7 +160,6 @@ describe('RubicTokenStaking', function () {
 
 
       it("Should create whitelist stakes", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address]);
          await network.provider.send('evm_mine');
 
@@ -197,7 +183,7 @@ describe('RubicTokenStaking', function () {
          let block = await ethers.provider.getBlock(blockNum);
          let timestamp = block.timestamp;
          await expect(firstToken.startTime).to.be.eq(timestamp);
-         await expect(firstToken.deadline).to.be.closeTo(timestamp + 5270400, 20); // + 61 days
+         await expect(firstToken.deadline).to.be.closeTo(timestamp + 5270400, 40); // + 61 days
 
          await network.provider.send('evm_mine');
 
@@ -219,8 +205,8 @@ describe('RubicTokenStaking', function () {
          let blockNum1 = await ethers.provider.getBlockNumber();
          let block1 = await ethers.provider.getBlock(blockNum1);
          let timestamp1 = block1.timestamp;
-         await expect(firstToken.startTime).to.be.closeTo(timestamp1,20);
-         await expect(secondToken.deadline).to.be.closeTo(timestamp1 + 5270400, 20); // + 61 days
+         await expect(firstToken.startTime).to.be.closeTo(timestamp1,40);
+         await expect(secondToken.deadline).to.be.closeTo(timestamp1 + 5270400, 40); // + 61 days
 
          await network.provider.send('evm_mine');
          let poolUSDCAfter = await this.Staking.poolUSDC();
@@ -250,7 +236,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should create stakes", async function () {
-         await this.Staking.startLP();
          await network.provider.send('evm_increaseTime', [
                 Number(86400)
          ]);
@@ -298,7 +283,6 @@ describe('RubicTokenStaking', function () {
 
    describe('Transfer', () => {
       it("Should transfer whitelist lp token", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address]);
 
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('655', 'ether'));
@@ -337,7 +321,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should transfer main lp token", async function () {
-         await this.Staking.startLP();
          let blockNum = await ethers.provider.getBlockNumber();
          let block = await ethers.provider.getBlock(blockNum);
          let timestamp = block.timestamp;
@@ -365,7 +348,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should transfer token after end of staking", async function () {
-         await this.Staking.startLP();
 
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
@@ -401,7 +383,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Shouldn't allow to transfer lp token", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Carol.address, this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
 
@@ -419,7 +400,6 @@ describe('RubicTokenStaking', function () {
 
    describe('Rewards', () => {
       it("Should add rewards, view rewards for main and whitelist", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
 
@@ -453,7 +433,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should claim Rewards", async function () {
-         await this.Staking.startLP();
 
          let blockNum = await ethers.provider.getBlockNumber();
          let block = await ethers.provider.getBlock(blockNum);
@@ -500,7 +479,6 @@ describe('RubicTokenStaking', function () {
       });
 
        it("Should not add rewards when transfering USDC directly to LP", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('500', 'ether'));
 
@@ -514,7 +492,6 @@ describe('RubicTokenStaking', function () {
       });
 
        it("Should change reward amount after leaving", async function () {
-         await this.Staking.startLP();
 
          let blockNum = await ethers.provider.getBlockNumber();
          let block = await ethers.provider.getBlock(blockNum);
@@ -612,7 +589,6 @@ describe('RubicTokenStaking', function () {
 
    describe('Withdraw', () => {
       it("Should request tokens without penalty", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
 
@@ -654,7 +630,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should request tokens with penalty", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
 
@@ -702,7 +677,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should claim rewards before request", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
 
@@ -719,7 +693,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should fundRequests", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
 
@@ -739,8 +712,40 @@ describe('RubicTokenStaking', function () {
          );
       });
 
+      it("Should fundRequests with rewards in pool", async function () {
+         await this.Staking.setWhitelist([this.Alice.address, this.Bob.address]);
+         await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
+         await this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('600', 'ether'));
+
+         await this.Staking.addRewards(Web3.utils.toWei('1000', 'ether'));
+
+         await this.Staking.connect(this.Alice).requestWithdraw(1);
+
+         const balanceBeforeWithdraw = await this.USDC.balanceOf(this.Staking.address) / 10**18;
+         await expect(balanceBeforeWithdraw).to.be.eq(500);
+
+         const requestedAmount = await this.Staking.requestedAmount();
+         await expect(requestedAmount).to.be.eq(Web3.utils.toWei('540', 'ether'));
+
+         await network.provider.send('evm_increaseTime', [
+                Number(86400)
+         ]);
+         await network.provider.send('evm_mine');
+
+         await expect(this.Staking.connect(this.Alice).withdraw(1)).to.be.revertedWith(
+                "Funds hasnt arrived yet"
+         );
+
+         await this.Staking.fundRequests();
+
+         await expect(await this.Staking.requestedAmount()).to.be.eq(0);
+
+         await expect(this.Staking.fundRequests()).to.be.revertedWith(
+            'No need to fund'
+         );
+      });
+
       it("Should enter after request", async function () {
-         await this.Staking.startLP();
 
          let blockNum0 = await ethers.provider.getBlockNumber();
          let block0 = await ethers.provider.getBlock(blockNum0);
@@ -769,7 +774,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should enter after withdraw", async function () {
-         await this.Staking.startLP();
 
          let blockNum0 = await ethers.provider.getBlockNumber();
          let block0 = await ethers.provider.getBlock(blockNum0);
@@ -812,7 +816,6 @@ describe('RubicTokenStaking', function () {
       });
 
       it("Should withdraw and burn token", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
 
@@ -869,7 +872,6 @@ describe('RubicTokenStaking', function () {
 
    describe('View', () => {
       it("Should return infoAboutDepositsParsed correctly", async function () {
-         await this.Staking.startLP();
          await this.Staking.setWhitelist([this.Alice.address]);
          await this.Staking.connect(this.Alice).whitelistStake(Web3.utils.toWei('600', 'ether'));
 

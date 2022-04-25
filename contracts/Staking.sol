@@ -62,7 +62,9 @@ contract Staking is RubicLP {
 //        maxPoolUSDC = 100 * 10**decimals;
 //        maxPoolBRBC = 100 * 10**decimals;
 
-        startTime = uint32(1650466800);
+        //startTime = uint32(1650466800);
+        // for tests
+        startTime = uint32(block.timestamp);
         endTime = startTime + lpDuration;
 
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
