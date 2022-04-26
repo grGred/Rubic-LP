@@ -58,13 +58,13 @@ contract RubicLP is ERC721, SetParams {
     /// @param _USDCAmount the amount of USDC in
     function _mintLP(uint256 _USDCAmount, bool _whitelisted) internal {
         USDC.transferFrom(msg.sender, crossChain, _USDCAmount);
-        BRBC.transferFrom(msg.sender, address(this), _USDCAmount);
+        BRBC.transferFrom(msg.sender, address(this), _USDCAmount * 4);
         uint256 _tokenId = tokensLP.length;
         tokensLP.push(
             TokenLP(
                 _tokenId,
                 _USDCAmount,
-                _USDCAmount,
+                _USDCAmount * 4,
                 uint32(block.timestamp),
                 uint32(endTime),
                 true,
@@ -73,13 +73,13 @@ contract RubicLP is ERC721, SetParams {
             )
         );
         poolUSDC += _USDCAmount;
-        poolBRBC += _USDCAmount;
+        poolBRBC += _USDCAmount * 4;
 
         ownerToTokens[msg.sender].add(_tokenId);
 
         _mint(msg.sender, _tokenId);
 
-        emit Stake(address(0), msg.sender, _USDCAmount, _USDCAmount, endTime, _tokenId);
+        emit Stake(address(0), msg.sender, _USDCAmount, _USDCAmount * 4, endTime, _tokenId);
     }
 
     /// @dev Internal function which burns LP tokens, clears data from mappings, arrays

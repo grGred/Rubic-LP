@@ -53,6 +53,8 @@ module.exports = {
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_ID_PROJECT}`,
+      chainId: 5,
+      accounts: [`0x${MNEMONIC || '1000000000000000000000000000000000000000000000000000000000000000'}`],
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_ID_PROJECT}`,

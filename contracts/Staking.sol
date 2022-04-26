@@ -32,35 +32,35 @@ contract Staking is RubicLP {
     constructor(address usdcAddr, address brbcAddr) RubicLP(usdcAddr, brbcAddr) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MANAGER, msg.sender);
-        _setupRole(MANAGER, 0xafcAb7104657eeF1b1a0FB5f3B3a02E090cEbdBd);
+        _setupRole(MANAGER, 0x8796e04d35bA0251Fa71d9bC89937bED766970E3);
 
         // Set up penalty amount in % / 10
         penalty = 100;
         // set up pool size
 
-        requestTime = 1 days;
-        whitelistTime = 1 days;
-        lpDuration = 61 days;
-
-        minUSDCAmount = 500 * 10**decimals;
-        maxUSDCAmount = 5000 * 10**decimals;
-        maxUSDCAmountWhitelist = 800 * 10**decimals;
-
-        maxPoolUSDC = 800_000 * 10**decimals;
-        maxPoolBRBC = 800_000 * 10**decimals;
+//        requestTime = 1 days;
+//        whitelistTime = 1 days;
+//        lpDuration = 61 days;
+//
+//        minUSDCAmount = 500 * 10**decimals;
+//        maxUSDCAmount = 5000 * 10**decimals;
+//        maxUSDCAmountWhitelist = 800 * 10**decimals;
+//
+//        maxPoolUSDC = 800_000 * 10**decimals;
+//        maxPoolBRBC = 3_200_000 * 10**decimals;
 
         // test
 
-//        requestTime = 10 minutes;
-//        whitelistTime = 10 minutes;
-//        lpDuration = 610 minutes;
-//
-//        minUSDCAmount = 5 * 10**decimals;
-//        maxUSDCAmount = 50 * 10**decimals;
-//        maxUSDCAmountWhitelist = 8 * 10**decimals;
-//
-//        maxPoolUSDC = 100 * 10**decimals;
-//        maxPoolBRBC = 100 * 10**decimals;
+        requestTime = 20 minutes;
+        whitelistTime = 20 minutes;
+        lpDuration = 1220 minutes;
+
+        minUSDCAmount = 5 * 10**decimals;
+        maxUSDCAmount = 50 * 10**decimals;
+        maxUSDCAmountWhitelist = 8 * 10**decimals;
+
+        maxPoolUSDC = 100 * 10**decimals;
+        maxPoolBRBC = 400 * 10**decimals;
 
         //startTime = uint32(1650466800);
         // for tests
@@ -120,7 +120,7 @@ contract Staking is RubicLP {
         require(block.timestamp >= startTime, 'Whitelist period hasnt started');
         require(block.timestamp < startTime + whitelistTime, 'Whitelist staking period ended');
         require(
-            poolUSDC + _amountUSDC <= maxPoolUSDC && poolBRBC + _amountUSDC <= maxPoolBRBC,
+            poolUSDC + _amountUSDC <= maxPoolUSDC && poolBRBC + (_amountUSDC * 4) <= maxPoolBRBC,
             'Max pool size exceeded'
         );
         require(_amountUSDC >= minUSDCAmount, 'Less than minimum stake amount');
@@ -134,7 +134,7 @@ contract Staking is RubicLP {
         require(block.timestamp >= startTime + whitelistTime, "Staking period hasn't started");
         require(block.timestamp <= endTime, 'Staking period has ended');
         require(
-            poolUSDC + _amountUSDC <= maxPoolUSDC && poolBRBC + _amountUSDC <= maxPoolBRBC,
+            poolUSDC + _amountUSDC <= maxPoolUSDC && poolBRBC + (_amountUSDC * 4) <= maxPoolBRBC,
             'Max pool size exceeded'
         );
         require(_amountUSDC >= minUSDCAmount, 'Less than minimum stake amount');
@@ -212,11 +212,12 @@ contract Staking is RubicLP {
         require(tokensLP[_tokenId].isStaked == false, 'Request withdraw first');
         require(tokensLP[_tokenId].deadline < block.timestamp, 'Request in process');
         require(tokensLP[_tokenId].USDCAmount <= USDC.balanceOf(address(this)), 'Funds hasnt arrived yet');
-        uint256 _withdrawAmount = tokensLP[_tokenId].USDCAmount;
+        uint256 _withdrawAmountUSDC = tokensLP[_tokenId].USDCAmount;
+        uint256 _withdrawAmountBRBC = tokensLP[_tokenId].BRBCAmount;
         _burnLP(_tokenId);
-        USDC.transfer(msg.sender, _withdrawAmount);
-        BRBC.transfer(msg.sender, _withdrawAmount);
-        emit Withdraw(address(this), msg.sender, _tokenId, _withdrawAmount, _withdrawAmount);
+        USDC.transfer(msg.sender, _withdrawAmountUSDC);
+        BRBC.transfer(msg.sender, _withdrawAmountBRBC);
+        emit Withdraw(address(this), msg.sender, _tokenId, _withdrawAmountUSDC, _withdrawAmountBRBC);
     }
 
     function sweepTokens(address token) external onlyManager {

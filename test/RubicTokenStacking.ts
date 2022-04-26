@@ -174,7 +174,7 @@ describe('RubicTokenStaking', function () {
 
          await expect(firstToken.tokenId.toString()).to.be.eq('1');
          await expect(firstToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('800', 'ether').toString());
-         await expect(firstToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('800', 'ether').toString());
+         await expect(firstToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('3200', 'ether').toString());
          await expect(firstToken.isStaked.toString()).to.be.eq('true');
          await expect(firstToken.isWhitelisted.toString()).to.be.eq('true');
          await expect(await this.Staking.viewRewards('1')).to.be.eq('0');
@@ -197,7 +197,7 @@ describe('RubicTokenStaking', function () {
 
          await expect(secondToken.tokenId.toString()).to.be.eq('2');
          await expect(secondToken.USDCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
-         await expect(secondToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('500', 'ether').toString());
+         await expect(secondToken.BRBCAmount.toString()).to.be.eq(Web3.utils.toWei('2000', 'ether').toString());
          await expect(secondToken.isStaked.toString()).to.be.eq('true');
          await expect(secondToken.isWhitelisted.toString()).to.be.eq('true');
          await expect(await this.Staking.viewRewards('2')).to.be.eq('0');
@@ -221,7 +221,7 @@ describe('RubicTokenStaking', function () {
 
          let balanceBRBC = await this.BRBC.balanceOf(this.Alice.address);
          await expect(balanceBRBC.toString()).to.be.eq(
-             Web3.utils.toWei('99500', 'ether').toString()
+             Web3.utils.toWei('98000', 'ether').toString()
          );
          await expect(this.Staking.connect(this.Bob).whitelistStake(Web3.utils.toWei('800', 'ether'))).to.be.revertedWith(
             'You are not in whitelist'
@@ -644,7 +644,7 @@ describe('RubicTokenStaking', function () {
          );
 
          await expect(AliceFirstToken.BRBCAmount.toString()).to.be.eq
-            (Web3.utils.toWei('540', 'ether')
+            (Web3.utils.toWei('2160', 'ether')
          );
 
          await expect((await this.Staking.requestedAmount()).toString()).to.be.eq(
@@ -668,7 +668,7 @@ describe('RubicTokenStaking', function () {
          );
 
          await expect(AliceSecondToken.BRBCAmount.toString()).to.be.eq
-            (Web3.utils.toWei('900', 'ether')
+            (Web3.utils.toWei('3600', 'ether')
          );
 
          await expect((await this.Staking.requestedAmount()).toString()).to.be.eq(
@@ -708,7 +708,7 @@ describe('RubicTokenStaking', function () {
          );
 
          await expect(balanceBRBCStaking).to.be.eq
-            (Web3.utils.toWei('540', 'ether')
+            (Web3.utils.toWei('2160', 'ether')
          );
       });
 
@@ -760,17 +760,27 @@ describe('RubicTokenStaking', function () {
          await this.Staking.connect(this.Bob).stake(Web3.utils.toWei('5000', 'ether'));
 
          let poolUSDCBefore = await this.Staking.poolUSDC();
+         let poolBRBCBefore = await this.Staking.poolBRBC();
+
          await expect(poolUSDCBefore).to.be.eq(Web3.utils.toWei('10000', 'ether'));
+         await expect(poolBRBCBefore).to.be.eq(Web3.utils.toWei('40000', 'ether'));
+
          // early unstake
          await this.Staking.connect(this.Alice).requestWithdraw(1);
 
          let poolUSDCAfter = await this.Staking.poolUSDC();
+         let poolBRBCAfter = await this.Staking.poolBRBC();
+
          await expect(poolUSDCAfter).to.be.eq(Web3.utils.toWei('5000', 'ether'));
+         await expect(poolBRBCAfter).to.be.eq(Web3.utils.toWei('20000', 'ether'));
 
          await this.Staking.connect(this.Carol).stake(Web3.utils.toWei('500', 'ether'));
 
          let poolUSDCEnd = await this.Staking.poolUSDC();
+         let poolBRBCEnd = await this.Staking.poolBRBC();
+
          await expect(poolUSDCEnd).to.be.eq(Web3.utils.toWei('5500', 'ether'));
+         await expect(poolBRBCEnd).to.be.eq(Web3.utils.toWei('22000', 'ether'));
       });
 
       it("Should enter after withdraw", async function () {
@@ -862,7 +872,7 @@ describe('RubicTokenStaking', function () {
          );
 
          await expect(balanceBRBCAfter).to.be.eq(
-             Number(balanceBRBCBefore) + 540000000000000000000 / (10 ** 18)
+             Number(balanceBRBCBefore) + 2160000000000000000000 / (10 ** 18)
          );
 
          const tokensAliceAfter = await this.Staking.viewTokensByOwner(this.Alice.address);
