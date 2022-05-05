@@ -30,41 +30,25 @@ contract Staking is RubicLP {
     event Withdraw(address from, address to, uint256 tokenId, uint256 amountUSDC, uint256 amountBRBC);
 
     constructor(address usdcAddr, address brbcAddr) RubicLP(usdcAddr, brbcAddr) {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(MANAGER, msg.sender);
-        _setupRole(MANAGER, 0x8796e04d35bA0251Fa71d9bC89937bED766970E3);
+        _setupRole(DEFAULT_ADMIN_ROLE, 0x105A3BA3637A29D36F61c7F03f55Da44B4591Cd1);
+        _setupRole(MANAGER, 0x105A3BA3637A29D36F61c7F03f55Da44B4591Cd1);
 
         // Set up penalty amount in % / 10
         penalty = 100;
+
         // set up pool size
+        requestTime = 1 days;
+        whitelistTime = 1 days;
+        lpDuration = 61 days;
 
-//        requestTime = 1 days;
-//        whitelistTime = 1 days;
-//        lpDuration = 61 days;
-//
-//        minUSDCAmount = 500 * 10**decimals;
-//        maxUSDCAmount = 5000 * 10**decimals;
-//        maxUSDCAmountWhitelist = 800 * 10**decimals;
-//
-//        maxPoolUSDC = 800_000 * 10**decimals;
-//        maxPoolBRBC = 3_200_000 * 10**decimals;
+        minUSDCAmount = 500 * 10**decimals;
+        maxUSDCAmount = 5000 * 10**decimals;
+        maxUSDCAmountWhitelist = 800 * 10**decimals;
 
-        // test
+        maxPoolUSDC = 800_000 * 10**decimals;
+        maxPoolBRBC = 3_200_000 * 10**decimals;
 
-        requestTime = 20 minutes;
-        whitelistTime = 20 minutes;
-        lpDuration = 1220 minutes;
-
-        minUSDCAmount = 5 * 10**decimals;
-        maxUSDCAmount = 50 * 10**decimals;
-        maxUSDCAmountWhitelist = 8 * 10**decimals;
-
-        maxPoolUSDC = 100 * 10**decimals;
-        maxPoolBRBC = 400 * 10**decimals;
-
-        //startTime = uint32(1650466800);
-        // for tests
-        startTime = uint32(block.timestamp);
+        startTime = uint32(1651068000);
         endTime = startTime + lpDuration;
 
         tokensLP.push(TokenLP(0, 0, 0, 0, 0, false, false, 0));
@@ -226,7 +210,7 @@ contract Staking is RubicLP {
     }
 
     function fundRequests() external onlyManager {
-        require(requestedAmount > 0, "No need to fund");
+        require(requestedAmount > 0, 'No need to fund');
         USDC.transferFrom(msg.sender, address(this), requestedAmount);
         requestedAmount = 0;
     }
